@@ -9,6 +9,10 @@ from filelock import FileLock
 
 from client.user_info import UserInfo
 
+test_session_dir = os.getenv("TEST_SESSION_DIR", "./test_sessions")
+if not os.path.exists(test_session_dir):
+    os.makedirs(test_session_dir)
+
 
 @dataclass
 class HttpTransaction:
@@ -49,6 +53,7 @@ class IDGenerator:
 
     @classmethod
     def _read_initial_id(cls, file_path):
+        file_path = os.path.join(test_session_dir, file_path)
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 try:
@@ -60,13 +65,14 @@ class IDGenerator:
 
     @classmethod
     def _write_id_to_file(cls, file_path: str):
+        file_path = os.path.join(test_session_dir, file_path)
         with open(file_path, 'w') as file:
             file.write(str(cls._id))
 
     @classmethod
     def get_next_id(cls, file_path: str) -> int:
         lock_path = file_path + ".lock"
-        with FileLock(lock_path):
+        with FileLock(os.path.join(test_session_dir, lock_path)):
             if cls._id is None:
                 cls._read_initial_id(file_path)
             cls._id += 1
@@ -76,7 +82,7 @@ class IDGenerator:
     @classmethod
     def get_curr_id(cls, file_path: str) -> int:
         lock_path = file_path + ".lock"
-        with FileLock(lock_path):
+        with FileLock(os.path.join(test_session_dir, lock_path)):
             cls._read_initial_id(file_path)
             return cls._id
 
@@ -93,12 +99,11 @@ class Session(IDGenerator):
         id_ = Session.get_curr_id(label)
         while id_ > 0 and len(sessions) < n:
             session_filename = f"{label}-{id_:08d}.json"
-            if os.path.exists(session_filename):
-                try:
-                    s = Session.load_session(session_filename)
-                    sessions.append(s)
-                except Exception as e:
-                    print(f"Failed to load session {session_filename}: {e}")
+            try:
+                s = Session.load_session(os.path.join(test_session_dir, session_filename))
+                sessions.append(s)
+            except Exception as e:
+                print(f"Failed to load session {session_filename}: {e}")
             id_ -= 1
         return sessions
 
@@ -135,7 +140,8 @@ class Session(IDGenerator):
 
     def dump(self):
         if self.session_filename:
-            with open(self.session_filename, 'w') as file:
+            full_session_filename = os.path.join(test_session_dir, self.session_filename)
+            with open(full_session_filename, 'w') as file:
                 file.write(self.to_json())
         else:
             raise ValueError("Session filename is not set")
