@@ -3,8 +3,8 @@ import inspect
 import sys
 from typing import List
 
-from client import Session, SingleSessionCase, SingleRequestCase, AllSessionCase
-from client.session import HttpTransaction
+from .session import Session, HttpTransaction
+from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase
 
 
 def stop_till_n_repeat(n):

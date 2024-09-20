@@ -4,7 +4,8 @@ import pandas as pd
 from openpyxl.reader.excel import load_workbook
 from openpyxl.styles import Alignment, Font
 
-from client import BatchTester, BatchSender, load_sessions
+from .batch import BatchSender, load_sessions
+from .testcase import BatchTester
 
 test_report_dir = os.getenv("TEST_REPORT_DIR", "./test_reports")
 if not os.path.exists(test_report_dir):

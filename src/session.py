@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from filelock import FileLock
 
-from client.user_info import UserInfo
+from .user_info import UserInfo
 
 test_session_dir = os.getenv("TEST_SESSION_DIR", "./test_sessions")
 if not os.path.exists(test_session_dir):
@@ -42,7 +42,6 @@ class HttpTransaction:
 
     def rsp_json_data(self):
         return self.rsp_json()["data"]
-
 
     @staticmethod
     def from_json(json_str: str) -> 'HttpTransaction':

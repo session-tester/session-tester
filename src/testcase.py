@@ -1,7 +1,7 @@
 import traceback
 from typing import Tuple, Callable, List
 
-from client.session import HttpTransaction, Session
+from .session import HttpTransaction, Session
 
 
 class TestCase(object):

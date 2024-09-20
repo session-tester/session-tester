@@ -5,7 +5,7 @@ from typing import Optional, Callable
 
 import requests
 
-from client.session import Session, HttpTransaction
+from .session import Session, HttpTransaction
 
 
 # Client 用于收发HTTP请求的

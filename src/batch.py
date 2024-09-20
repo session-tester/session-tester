@@ -1,8 +1,8 @@
 import queue
 import threading
 
-from client.client import Client
-from client.session import Session
+from .client import Client
+from .session import Session
 
 
 # 获得大量的用户信息，创建Session，创建Client，发送消息，保存Session
