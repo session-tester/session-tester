@@ -1,3 +1,4 @@
+import traceback
 from typing import Tuple, Callable, List
 
 from client.session import HttpTransaction, Session
@@ -112,34 +113,30 @@ class BatchTester(object):
 
     def check(self, extra_cases=[]):
         self.report_list = []
+
+        def run_and_append(report_, f, target):
+            try:
+                result, report_content = f(target)
+            except Exception as e:
+                # 获取异常堆栈信息
+                stack_trace = traceback.format_exc()
+                result, report_content = False, f"checking exception: {e}\nStack trace:\n{stack_trace}"
+            if result is not None:
+                report_.case_results.append((result, report_content))
+
         for case in self.test_cases + extra_cases:
             if isinstance(case, SingleRequestCase):
                 report = Report(case.name, case.expectation, "SingleRequestCase")
                 for session in self.session_list:
                     for transaction in session.transactions:
-                        try:
-                            result, report_content = case.rsp_checker(transaction)
-                        except:
-                            result, report_content = False, "checking exception"
-                        if result is not None:
-                            report.case_results.append((result, report_content))
+                        run_and_append(report, case.rsp_checker, transaction)
             elif isinstance(case, SingleSessionCase):
                 report = Report(case.name, case.expectation, "SingleSessionCase")
                 for session in self.session_list:
-                    try:
-                        result, report_content = case.session_checker(session)
-                    except:
-                        result, report_content = False, "checking exception"
-                    if result is not None:
-                        report.case_results.append((result, report_content))
+                    run_and_append(report, case.session_checker, session)
             elif isinstance(case, AllSessionCase):
                 report = Report(case.name, case.expectation, "AllSessionCase")
-                try:
-                    result, report_content = case.session_list_checker(self.session_list)
-                except:
-                    result, report_content = False, "checking exception"
-                if result is not None:
-                    report.case_results.append((result, report_content))
+                run_and_append(report, case.session_list_checker, self.session_list)
             else:
                 raise RuntimeError("unknown case type")
 
