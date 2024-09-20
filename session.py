@@ -109,7 +109,7 @@ class Session(IDGenerator):
 
     def __init__(self, label: str, create_flag=True):
         self.label = label
-        self.user_info = None
+        self.user_info: UserInfo = None
         self.transactions = []
         self.start_time = None
         self.session_filename = None

@@ -8,6 +8,7 @@ class UserInfo:
     area: str = None
     plat: str = None
     partition: str = None
+    user_type: str = None
     role_id: str = None
     extra: dict = field(default_factory=dict)
 

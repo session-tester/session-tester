@@ -19,7 +19,7 @@ def overwrite_name_and_expectation(name, expectation, doc):
         fields = doc.split(":", 1)
         name_ = fields[0].strip()
         if len(fields) > 1:
-            expectation_ = fields[1].strip()
+            expectation_ = '\n'.join([x.lstrip(" ") for x in fields[1].strip().split("\n")])
         else:
             expectation_ = None
     if name is None:
@@ -70,17 +70,30 @@ class Report(TestCase):
         super().__init__(name, expectation)
         self.case_type = case_type
         self.result = None
+        self.bad_case = None
         self.report_content = []
         self.case_results = []
 
     def summary(self):
+        if not self.case_results:
+            self.result = "未覆盖"
+            return
         self.result = "通过"
-        self.report_content = ["测试数据相见文档"]
         for result, report_content in self.case_results:
             if not result:
                 self.result = "未通过"
-                self.report_content = [report_content]
+                self.bad_case = report_content
                 return
+
+    def summary_dict(self):
+        self.summary()
+        return {
+            "name": self.name,
+            "expectation": self.expectation,
+            "result": self.result,
+            "bad_case": self.bad_case,
+            "report_content": self.report_content
+        }
 
     def __str__(self):
         self.summary()
@@ -108,7 +121,8 @@ class BatchTester(object):
                             result, report_content = case.rsp_checker(transaction)
                         except:
                             result, report_content = False, "checking exception"
-                        report.case_results.append((result, report_content))
+                        if result is not None:
+                            report.case_results.append((result, report_content))
             elif isinstance(case, SingleSessionCase):
                 report = Report(case.name, case.expectation, "SingleSessionCase")
                 for session in self.session_list:
@@ -116,14 +130,16 @@ class BatchTester(object):
                         result, report_content = case.session_checker(session)
                     except:
                         result, report_content = False, "checking exception"
-                    report.case_results.append((result, report_content))
+                    if result is not None:
+                        report.case_results.append((result, report_content))
             elif isinstance(case, AllSessionCase):
                 report = Report(case.name, case.expectation, "AllSessionCase")
                 try:
                     result, report_content = case.session_list_checker(self.session_list)
                 except:
                     result, report_content = False, "checking exception"
-                report.case_results.append((result, report_content))
+                if result is not None:
+                    report.case_results.append((result, report_content))
             else:
                 raise RuntimeError("unknown case type")
 
