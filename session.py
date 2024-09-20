@@ -40,6 +40,10 @@ class HttpTransaction:
     def rsp_json(self):
         return json.loads(self.response)
 
+    def rsp_json_data(self):
+        return self.rsp_json()["data"]
+
+
     @staticmethod
     def from_json(json_str: str) -> 'HttpTransaction':
         data = json.loads(json_str)
