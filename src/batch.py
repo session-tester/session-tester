@@ -32,18 +32,11 @@ class Worker(threading.Thread):
                 return
 
 
-def load_sessions(env, cred_id, n=100) -> list:
-    label = f"{env}_{cred_id}"
-    return Session.load_sessions(label, n)
-
-
 class BatchSender(object):
-    def __init__(self, env, cred_id, url, thread_cnt):
-        self.env = env
-        self.cred_id = cred_id
+    def __init__(self, label, url, thread_cnt):
         self.thread_cnt = thread_cnt
         self.url = url
-        self.label = f"{env}_{cred_id}"
+        self.label = label
 
     def run(self, user_info_queue, wrap_data_func, start_func=None, session_update_func=None, stop_func=None):
         t_list = []

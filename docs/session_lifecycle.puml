@@ -1,0 +1,25 @@
+@startuml
+
+start
+
+partition "Session Life Cycle" {
+
+:start_func();
+
+repeat
+rectangle "Request/Response" {
+  :wrap_req_func();
+  -> req;
+  :Send and Receive;
+  -> rsp;
+}
+
+:session_update_func();
+
+repeat while (stop_func())  is (True) not (False)
+
+}
+stop
+
+
+@enduml

@@ -4,7 +4,8 @@ import pandas as pd
 from openpyxl.reader.excel import load_workbook
 from openpyxl.styles import Alignment, Font
 
-from .batch import BatchSender, load_sessions
+from .batch import BatchSender
+from .session import Session
 from .testcase import BatchTester
 
 test_report_dir = os.getenv("TEST_REPORT_DIR", "./test_reports")
@@ -13,7 +14,7 @@ if not os.path.exists(test_report_dir):
 
 
 class Tester(object):
-    def __init__(self, env, cred_id,
+    def __init__(self, label,
                  user_info_queue,
                  url: str,
                  req_wrapper: callable,
@@ -23,8 +24,7 @@ class Tester(object):
                  session_update_func: callable = None,
                  stop_func: callable = None,
                  ):
-        self.env = env
-        self.cred_id = cred_id
+        self.label = label
         self.user_info_queue = user_info_queue
         self.url = url
         self.req_wrapper = req_wrapper
@@ -37,8 +37,7 @@ class Tester(object):
 
         # 内部的变量
         self.batch_sender = BatchSender(
-            env=self.env,
-            cred_id=self.cred_id,
+            label=label,
             url=self.url,
             thread_cnt=self.thread_cnt
         )
@@ -57,7 +56,7 @@ class Tester(object):
                 self.session_cnt_to_check = session_cnt_to_check
 
         # 加载会话结果
-        session_list = load_sessions(env=self.env, cred_id=self.cred_id, n=self.session_cnt_to_check)
+        session_list = Session.load_sessions(self.label, n=self.session_cnt_to_check)
 
         # 设置测试用例
         self.bt = BatchTester(self.title, session_list)
