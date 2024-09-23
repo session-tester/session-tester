@@ -18,10 +18,14 @@ class Client(object):
         self.url = url
         self.http_session = self.get_http_session()
 
-    # 这三个函数从session中拿信息做处理
+    # 这四个函数从session中拿信息做处理
     def run(self, wrap_data_func: Callable[[Session], None],
+            start_func: Optional[Callable[[Session], None]] = None,
             session_update_func: Optional[Callable[[Session], None]] = None,
             stop_func: Optional[Callable[[Session], None]] = None):
+
+        if start_func is not None:
+            start_func(self.session)
 
         http_trans = HttpTransaction(url=self.url, method="POST", request=None, response=None, status_code=None,
                                      request_time=None)

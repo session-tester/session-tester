@@ -9,12 +9,13 @@ from .session import Session
 # 加载最近session
 
 class Worker(threading.Thread):
-    def __init__(self, label, url, user_info_queue, wrap_data_func, session_update_func, stop_func):
+    def __init__(self, label, url, user_info_queue, wrap_data_func, start_func, session_update_func, stop_func):
         threading.Thread.__init__(self)
         self.label = label
         self.url = url
         self.user_info_queue = user_info_queue
         self.wrap_data_func = wrap_data_func
+        self.start_func = start_func
         self.session_update_func = session_update_func
         self.stop_func = stop_func
 
@@ -25,11 +26,10 @@ class Worker(threading.Thread):
                 session = Session(label=self.label)
                 session.create(user_info=user_info, transactions=[])
                 client = Client(session=session, url=self.url)
-                client.run(self.wrap_data_func, self.session_update_func, self.stop_func)
+                client.run(self.wrap_data_func, self.start_func, self.session_update_func, self.stop_func)
+                session.dump()
             except queue.Empty:
                 return
-            finally:
-                session.dump()
 
 
 def load_sessions(env, cred_id, n=100) -> list:
@@ -45,11 +45,12 @@ class BatchSender(object):
         self.url = url
         self.label = f"{env}_{cred_id}"
 
-    def run(self, user_info_queue, wrap_data_func, session_update_func=None, stop_func=None):
+    def run(self, user_info_queue, wrap_data_func, start_func=None, session_update_func=None, stop_func=None):
         t_list = []
 
         for i in range(min(self.thread_cnt, user_info_queue.qsize())):
-            t = Worker(self.label, self.url, user_info_queue, wrap_data_func, session_update_func, stop_func)
+            t = Worker(self.label, self.url, user_info_queue, wrap_data_func, start_func, session_update_func,
+                       stop_func)
             t_list.append(t)
 
         for t in t_list:

@@ -19,6 +19,7 @@ class Tester(object):
                  req_wrapper: callable,
                  title: str,
                  thread_cnt: int = 50,
+                 start_func: callable = None,
                  session_update_func: callable = None,
                  stop_func: callable = None,
                  ):
@@ -27,6 +28,7 @@ class Tester(object):
         self.user_info_queue = user_info_queue
         self.url = url
         self.req_wrapper = req_wrapper
+        self.start_func = start_func
         self.session_update_func = session_update_func
         self.stop_func = stop_func
         self.thread_cnt = thread_cnt
@@ -45,7 +47,10 @@ class Tester(object):
 
     def run(self, test_cases, only_check=False, session_cnt_to_check: int = 0):
         if not only_check:
-            self.batch_sender.run(self.user_info_queue, self.req_wrapper, self.session_update_func, self.stop_func)
+            self.batch_sender.run(self.user_info_queue, self.req_wrapper,
+                                  start_func=self.start_func,
+                                  session_update_func=self.session_update_func,
+                                  stop_func=self.stop_func)
 
         if session_cnt_to_check:
             if session_cnt_to_check > self.session_cnt_to_check:
