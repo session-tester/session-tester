@@ -1,4 +1,5 @@
 import json
+import hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
@@ -16,7 +17,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         round_num = data.get('round')
         items = list(set([12, 3, 3, 5]))  # Replace with your logic to generate unrepeated int list
         # md5sum of user_id + round_num + items
-        sig = None # TODO
+        sig = hashlib.md5((user_id + str(round_num) + str(items)).encode('utf-8')).hexdigest()
         response_data = {
             "user_id": user_id,
             "next_round": round_num + 1,
