@@ -1,5 +1,6 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -14,19 +15,24 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         user_id = data.get('user_id')
         round_num = data.get('round')
         items = list(set([12, 3, 3, 5]))  # Replace with your logic to generate unrepeated int list
+        # md5sum of user_id + round_num + items
+        sig = None # TODO
         response_data = {
             "user_id": user_id,
-            "round": round_num,
-            "items": items
+            "next_round": round_num + 1,
+            "items": items,
+            "signature": sig,
         }
         self._set_response()
         self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
 
 def run(server_class=HTTPServer, handler_class=SimpleHTTPRequestHandler, port=8000):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     print(f'Starting httpd on port {port}')
     httpd.serve_forever()
+
 
 if __name__ == '__main__':
     run()
