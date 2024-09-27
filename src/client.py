@@ -1,3 +1,4 @@
+import json
 import queue
 import threading
 import time
@@ -27,17 +28,27 @@ class Client(object):
         if start_func is not None:
             start_func(self.session)
 
-        http_trans = HttpTransaction(url=self.url, method="POST", request=None, response=None, status_code=None,
-                                     request_time=None)
         while True:
+            http_trans = HttpTransaction(url=self.url, method="POST", request=None, response=None, status_code=None,
+                                         request_time=None)
+
+            def send_request():
+                req = wrap_data_func(self.session)
+                if isinstance(req, dict) or isinstance(http_trans.request, list):
+                    r = self.http_session.post(self.url, json=req)
+                    http_trans.request = json.JSONEncoder().encode(req)
+                else:
+                    r = self.http_session.post(self.url, req)
+                    http_trans.request = req
+
+                return r
 
             try:
-                http_trans.request = wrap_data_func(self.session)
-                r = self.http_session.post(self.url, json=http_trans.request)
+                r = send_request()
             except:
                 time.sleep(1)
                 # 重试一次
-                r = self.http_session.post(self.url, json=http_trans.request)
+                r = send_request()
 
             http_trans.status_code = r.status_code
             http_trans.response = r.text

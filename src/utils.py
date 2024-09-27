@@ -6,6 +6,8 @@ from typing import List
 from .session import Session, HttpTransaction
 from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase
 
+_session_checker_prefix = "chk"
+
 
 def stop_till_n_repeat(n):
     def session_stop_func(s: Session):
@@ -14,31 +16,37 @@ def stop_till_n_repeat(n):
     return session_stop_func
 
 
-def auto_gen_cases_from_ck_func():
-    module = sys.modules["__main__"]
+def auto_gen_cases_from_chk_func(checker_prefix=_session_checker_prefix, module_name="__main__"):
+    module = sys.modules[module_name]
     source = inspect.getsource(module)
     tree = ast.parse(source)
 
     check_cases = []
 
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name.startswith('ck'):
+        if isinstance(node, ast.FunctionDef) and node.name.startswith(checker_prefix):
             func = getattr(module, node.name)
             signature = inspect.signature(func)
             params = list(signature.parameters.values())
             if params:
                 if params[0].annotation == HttpTransaction:
                     # 单请求
-                    check_cases.append(SingleRequestCase(rsp_checker=func))
+                    case = SingleRequestCase(rsp_checker=func)
                 elif params[0].annotation == Session:
                     # 单会话
-                    check_cases.append(SingleSessionCase(session_checker=func))
+                    case = SingleSessionCase(session_checker=func)
                 elif params[0].annotation == List[Session]:
                     # 所有会话
-                    check_cases.append(AllSessionCase(session_list_checker=func))
+                    case = AllSessionCase(session_list_checker=func)
                 else:
                     raise ValueError(
                         f"First parameter of function {node.name} should be of type HttpTransaction or Session")
+
+                if not case.name:
+                    raise ValueError(f"Function {node.name} should have a name")
+                if not case.expectation:
+                    raise ValueError(f"Function {node.name} should have an expectation")
+                check_cases.append(case)
             else:
                 raise ValueError(f"Function {node.name} should have at least one parameter")
 

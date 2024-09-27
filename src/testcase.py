@@ -72,7 +72,7 @@ class Report(TestCase):
         self.case_type = case_type
         self.result = None
         self.bad_case = None
-        self.report_content = []
+        self.ext_report = []
         self.case_results = []
 
     def summary(self):
@@ -80,10 +80,16 @@ class Report(TestCase):
             self.result = "未覆盖"
             return
         self.result = "通过"
-        for result, report_content in self.case_results:
+
+        self.ext_report = []
+        for result, exception, report_lines in self.case_results:
+            if report_lines is not None:
+                self.ext_report += report_lines
+
+        for result, exception, report_lines in self.case_results:
             if not result:
                 self.result = "未通过"
-                self.bad_case = report_content
+                self.bad_case = exception
                 return
 
     def summary_dict(self):
@@ -93,12 +99,12 @@ class Report(TestCase):
             "expectation": self.expectation,
             "result": self.result,
             "bad_case": self.bad_case,
-            "report_content": self.report_content
+            "ext_report": self.ext_report
         }
 
     def __str__(self):
         self.summary()
-        return f"{self.name} {self.expectation} {self.case_type} {self.result} {self.report_content}"
+        return f"{self.name} {self.expectation} {self.case_type} {self.result} {self.ext_report}"
 
 
 class BatchTester(object):
@@ -116,13 +122,21 @@ class BatchTester(object):
 
         def run_and_append(report_, f, target):
             try:
-                result, report_content = f(target)
+                fields = f(target)
+                if len(fields) == 2:
+                    result, exception = fields[0], fields[1]
+                    report_lines = None
+                elif len(fields) == 3:
+                    result, exception, report_lines = fields[0], fields[1], fields[2]
+                else:
+                    raise RuntimeError("invalid return fields")
             except Exception as e:
                 # 获取异常堆栈信息
                 stack_trace = traceback.format_exc()
-                result, report_content = False, f"checking exception: {e}\nStack trace:\n{stack_trace}"
+                result, exception, report_lines = False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None
+
             if result is not None:
-                report_.case_results.append((result, report_content))
+                report_.case_results.append((result, exception, report_lines))
 
         for case in self.test_cases + extra_cases:
             if isinstance(case, SingleRequestCase):

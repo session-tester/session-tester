@@ -5,6 +5,7 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.styles import Alignment, Font
 
 from .batch import BatchSender
+from .logger import logger
 from .session import Session
 from .testcase import BatchTester
 
@@ -44,49 +45,73 @@ class Tester(object):
 
         self.bt: BatchTester = None
 
-    def run(self, test_cases, only_check=False, session_cnt_to_check: int = 0):
+    def run(self, test_cases, only_check=False, session_cnt_to_check: int = 0, clear_session=False):
+        if clear_session and only_check:
+            raise ValueError("clear_session and only_check cannot be True at the same time")
+
+        if clear_session:
+            Session.clear_sessions(self.label)
+            logger.info("清除会话数据成功")
+
         if not only_check:
             self.batch_sender.run(self.user_info_queue, self.req_wrapper,
                                   start_func=self.start_func,
                                   session_update_func=self.session_update_func,
                                   stop_func=self.stop_func)
+            logger.info("发送请求完成")
 
-        if session_cnt_to_check:
-            if session_cnt_to_check > self.session_cnt_to_check:
-                self.session_cnt_to_check = session_cnt_to_check
+        if session_cnt_to_check and session_cnt_to_check > self.session_cnt_to_check:
+            self.session_cnt_to_check = session_cnt_to_check
+            logger.info(f"检查的数量设置为{self.session_cnt_to_check}(限定会话数量)")
+        else:
+            logger.info(f"检查的数量设置为{self.session_cnt_to_check}(队列用户数量)")
 
         # 加载会话结果
         session_list = Session.load_sessions(self.label, n=self.session_cnt_to_check)
+        if len(session_list) < session_cnt_to_check:
+            raise ValueError(f"No enough sessions data found. expect[{session_cnt_to_check}], got[{len(session_list)}]")
 
         # 设置测试用例
         self.bt = BatchTester(self.title, session_list)
+        logger.info("开始校验测试用例")
 
         # 进行校验
         self.bt.check(test_cases)
+        logger.info("校验完成")
 
         # 产生报告
+        logger.info("开始生成报告")
         self.gen_report()
         return session_list
 
     def gen_report(self):
         # 解析数据
         parsed_data = []
+        ext_report = []
         for report in self.bt.report_list:
-            data_dict = report.summary_dict()
+            report.summary()
             # 创建一个包含字典数据的列表
             parsed_data.append({
-                "功能点": data_dict['name'],
-                "预期结果": data_dict['expectation'],
-                "最终结果": data_dict['result'],
-                "异常说明": data_dict['bad_case']
+                "功能点": report.name,
+                "预期结果": report.expectation,
+                "最终结果": report.result,
+                "异常说明": report.bad_case
             })
 
-        # 创建DataFrame
-        df = pd.DataFrame(parsed_data)
+            if report.ext_report:
+                ext_report.append((report.name, report.ext_report))
 
         # 保存为Excel文件
         output_file = os.path.join(test_report_dir, f"测试报告-{self.title}.xlsx")
-        df.to_excel(output_file, index=False)
+
+        with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+            # 汇总信息
+            df = pd.DataFrame(parsed_data)
+            df.to_excel(writer, sheet_name="测试汇总", index=False)
+            # 报告详情
+            for name, ext_report in ext_report:
+                ext_df = pd.DataFrame(ext_report)
+                ext_df.to_excel(writer, sheet_name=name, index=False)
 
         # 加载生成的Excel文件
         wb = load_workbook(output_file)
@@ -127,4 +152,4 @@ class Tester(object):
         # 保存调整后的Excel文件
         wb.save(output_file)
 
-        print(f"数据已成功保存到 {output_file}")
+        logger.info(f"数据已成功保存到 {output_file}")

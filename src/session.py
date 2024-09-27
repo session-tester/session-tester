@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 from dataclasses import asdict
@@ -7,6 +8,7 @@ from typing import List, Optional
 
 from filelock import FileLock
 
+from .logger import logger
 from .user_info import UserInfo
 
 test_session_dir = os.getenv("TEST_SESSION_DIR", "./test_sessions")
@@ -36,6 +38,9 @@ class HttpTransaction:
         data = asdict(self)
         data['request_time'] = self.request_time.isoformat()
         return data
+
+    def req_json(self):
+        return json.loads(self.request)
 
     def rsp_json(self):
         return json.loads(self.response)
@@ -97,6 +102,17 @@ class Session(IDGenerator):
             return Session.from_json(file.read())
 
     @staticmethod
+    def clear_sessions(label: str):
+        id_file = os.path.join(test_session_dir, f"{label}")
+        session_filename_list = glob.glob(id_file + "-*.json")
+        files = session_filename_list + [id_file]
+        for filename in files:
+            try:
+                os.remove(filename)
+            except Exception as e:
+                logger.error(f"Failed to remove session {filename}: {e}")
+
+    @staticmethod
     def load_sessions(label: str, n: int = 100) -> List['Session']:
         sessions = []
         id_ = Session.get_curr_id(label)
@@ -106,7 +122,7 @@ class Session(IDGenerator):
                 s = Session.load_session(os.path.join(test_session_dir, session_filename))
                 sessions.append(s)
             except Exception as e:
-                print(f"Failed to load session {session_filename}: {e}")
+                logger.error(f"Failed to load session {session_filename}: {e}")
             id_ -= 1
         return sessions
 
@@ -116,6 +132,7 @@ class Session(IDGenerator):
         self.transactions = []
         self.start_time = None
         self.session_filename = None
+        self.ext_state = dict()
         if create_flag:
             self.session_id = Session.get_next_id(label)
 
@@ -126,6 +143,7 @@ class Session(IDGenerator):
         self.start_time = start_time
         # 创建一个session文件
         self.session_filename = f"{self.label}-{self.session_id:08d}.json"
+        self.ext_state = dict()
         self.dump()
         return self
 
@@ -138,6 +156,7 @@ class Session(IDGenerator):
             'session_id': self.session_id,
             'user_info': self.user_info.to_dict() if self.user_info else None,
             'transactions': [x.to_dict() for x in self.transactions],
+            'ext_state': self.ext_state,
             'start_time': self.start_time
         }, indent=2)
 
@@ -162,5 +181,6 @@ class Session(IDGenerator):
         s.transactions = transactions
         s.start_time = data.get('start_time')
         s.session_id = data['session_id']
+        s.ext_state = data['ext_state']
         s.session_filename = f"{s.label}-{s.session_id:08d}.json"
         return s
