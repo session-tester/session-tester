@@ -18,20 +18,14 @@ class Tester(object):
     def __init__(self, label,
                  user_info_queue,
                  url: str,
-                 req_wrapper: callable,
                  title: str,
+                 session_maintainer_cls,
                  thread_cnt: int = 50,
-                 start_func: callable = None,
-                 session_update_func: callable = None,
-                 stop_func: callable = None,
                  ):
         self.label = label
         self.user_info_queue = user_info_queue
         self.url = url
-        self.req_wrapper = req_wrapper
-        self.start_func = start_func
-        self.session_update_func = session_update_func
-        self.stop_func = stop_func
+        self.session_maintainer_cls = session_maintainer_cls
         self.thread_cnt = thread_cnt
         self.title = title
         self.session_cnt_to_check = self.user_info_queue.qsize()
@@ -54,10 +48,7 @@ class Tester(object):
             logger.info("清除会话数据成功")
 
         if not only_check:
-            self.batch_sender.run(self.user_info_queue, self.req_wrapper,
-                                  start_func=self.start_func,
-                                  session_update_func=self.session_update_func,
-                                  stop_func=self.stop_func)
+            self.batch_sender.run(self.user_info_queue, self.session_maintainer_cls)
             logger.info("发送请求完成")
 
         if session_cnt_to_check and session_cnt_to_check > self.session_cnt_to_check:

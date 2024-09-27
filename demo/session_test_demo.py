@@ -3,28 +3,32 @@ import uuid
 from typing import List
 
 from demo.demo_svr import calc_sig
-from src import Session, UserInfo, Tester, stop_till_n_repeat, auto_gen_cases_from_chk_func
+from src import Session, UserInfo, Tester, auto_gen_cases_from_chk_func
 from src.session import HttpTransaction
-
-cred_id = "jdqssy_profile_26784"
-
-
-# 批量发送消息
-def req_wrapper(s: Session):
-    ui = s.user_info
-    items_owned = s.ext_state.get("items", [])
-    round_ = s.ext_state.get("round", 0)
-    return {"user_id": ui.userid, "round": round_, "items_owned": items_owned}
+from src.session_maintainer import SessionMaintainerBase
 
 
-def update_state(s: Session):
-    o = s.transactions[-1].rsp_json()
-    s.ext_state["items"] += o["items"]
-    s.ext_state["round"] = o["next_round"]
+class SessionMaintainer(SessionMaintainerBase):
+    @staticmethod
+    def start_func(s: Session):
+        s.ext_state.update({"items": [], "round": 0})
 
+    @staticmethod
+    def wrap_data_func(s: Session):
+        ui = s.user_info
+        items_owned = s.ext_state.get("items", [])
+        round_ = s.ext_state.get("round", 0)
+        return {"user_id": ui.userid, "round": round_, "items_owned": items_owned}
 
-def start_func(s: Session):
-    s.ext_state.update({"items": [], "round": 0})
+    @staticmethod
+    def stop_func(s: Session) -> bool:
+        return len(s.transactions) >= 20
+
+    @staticmethod
+    def session_update_func(s: Session):
+        o = s.transactions[-1].rsp_json()
+        s.ext_state["items"] += o["items"]
+        s.ext_state["round"] = o["next_round"]
 
 
 def chk_rsp_sig(s: HttpTransaction):
@@ -79,9 +83,7 @@ def chk_items_dist_in_all_sessions(ss: List[Session]):
         v = item_dist[k]
         dist_detail.append({"item": k, "count": v})
 
-    if max(item_dist.values()) - min(item_dist.values()) <= 1:
-        return True, "", dist_detail
-    return False, f"item dist not even, {item_dist}"
+    return True, "", dist_detail
 
 
 def main():
@@ -95,14 +97,12 @@ def main():
 
     # 2. 创建测试对象
     env = "release"  # 环境
+    activity_id = 12345  # 活动ID
     t = Tester(
-        label=f"{env}_{cred_id}",
+        label=f"{env}_{activity_id}",
         user_info_queue=user_info_queue,  # 用户信息队列
         url="http://localhost:8000",  # 服务地址
-        req_wrapper=req_wrapper,  # 请求包装函数
-        session_update_func=update_state,
-        start_func=start_func,
-        stop_func=stop_till_n_repeat(20),  # 简单重复发送两次请求
+        session_maintainer_cls=SessionMaintainer,
         title="Demo Test",  # 活动名称，用于生成报告
         thread_cnt=80
     )

@@ -9,13 +9,6 @@ from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase
 _session_checker_prefix = "chk"
 
 
-def stop_till_n_repeat(n):
-    def session_stop_func(s: Session):
-        return len(s.transactions) >= n
-
-    return session_stop_func
-
-
 def auto_gen_cases_from_chk_func(checker_prefix=_session_checker_prefix, module_name="__main__"):
     module = sys.modules[module_name]
     source = inspect.getsource(module)
