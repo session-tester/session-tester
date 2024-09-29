@@ -9,3 +9,4 @@ __pycache__/
 test_sessions
 data
 test_reports
+.pytest_cache

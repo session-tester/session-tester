@@ -14,10 +14,7 @@ class SessionMaintainer(SessionMaintainerBase):
 
     def load_user_info(self):
         for i in range(10):
-            self.user_info_queue.put(UserInfo(
-                userid=uuid.uuid4().hex,
-                extra={"index": i},
-            ))
+            self.user_info_queue.put(UserInfo(userid=uuid.uuid4().hex, extra={"index": i}))
 
     @staticmethod
     def start_func(s: Session):
@@ -114,7 +111,8 @@ def main():
     # 2. 创建测试对象
     t = Tester(
         name=f"release_12345",
-        test_suites=[T(session_maintainer=SessionMaintainer()), T(session_maintainer=SessionMaintainer(), name="test2")],
+        test_suites=[T(session_maintainer=SessionMaintainer()),
+                     T(session_maintainer=SessionMaintainer(), name="test2")],
     )
 
     # 3. 运行测试用例产生报告
