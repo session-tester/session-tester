@@ -2,11 +2,11 @@ import json
 import queue
 import threading
 import time
-from typing import Optional, Callable
 
 import requests
 
-from .session import Session, HttpTransaction
+from .session import HttpTransaction
+from .session_maintainer import SessionMaintainerBase
 
 
 # Client 用于收发HTTP请求的
@@ -14,31 +14,30 @@ class Client(object):
     http_session_lock = threading.Lock()
     http_session_queue = queue.Queue()
 
-    def __init__(self, session, url):
+    def __init__(self, session, session_maintainer: SessionMaintainerBase):
         self.session = session
-        self.url = url
+        self.session_maintainer = session_maintainer
         self.http_session = self.get_http_session()
 
     # 这四个函数从session中拿信息做处理
-    def run(self, wrap_data_func: Callable[[Session], None],
-            start_func: Optional[Callable[[Session], None]] = None,
-            session_update_func: Optional[Callable[[Session], None]] = None,
-            stop_func: Optional[Callable[[Session], None]] = None):
-
-        if start_func is not None:
-            start_func(self.session)
+    def run(self):
+        if self.session_maintainer.start_func is not None:
+            self.session_maintainer.start_func(self.session)
 
         while True:
-            http_trans = HttpTransaction(url=self.url, method="POST", request=None, response=None, status_code=None,
-                                         request_time=None)
+            http_trans = HttpTransaction(
+                url=self.session_maintainer.url,
+                method=self.session_maintainer.http_method,
+                request=None, response=None, status_code=None,
+                request_time=None)
 
             def send_request():
-                req = wrap_data_func(self.session)
+                req = self.session_maintainer.wrap_data_func(self.session)
                 if isinstance(req, dict) or isinstance(http_trans.request, list):
-                    r = self.http_session.post(self.url, json=req)
+                    r = self.http_session.post(self.session_maintainer.url, json=req)
                     http_trans.request = json.JSONEncoder().encode(req)
                 else:
-                    r = self.http_session.post(self.url, req)
+                    r = self.http_session.post(self.session_maintainer.url, req)
                     http_trans.request = req
 
                 return r
@@ -55,12 +54,12 @@ class Client(object):
             self.session.append_transaction(http_trans)
 
             if r.status_code != 200:
-                raise RuntimeError(f"url: {self.url}, code: {r.status_code}), rsp: {r.text}")
+                raise RuntimeError(f"url: {self.session_maintainer.url}, code: {r.status_code}), rsp: {r.text}")
 
-            if session_update_func is not None:
-                session_update_func(self.session)
+            if self.session_maintainer.session_update_func is not None:
+                self.session_maintainer.session_update_func(self.session)
 
-            if stop_func is None or stop_func(self.session):
+            if self.session_maintainer.stop_func is None or self.session_maintainer.stop_func(self.session):
                 break
 
     def __del__(self):

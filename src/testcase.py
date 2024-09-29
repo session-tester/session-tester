@@ -1,4 +1,3 @@
-import traceback
 from typing import Tuple, Callable, List
 
 from .session import HttpTransaction, Session
@@ -113,49 +112,3 @@ class BatchTester(object):
         self.session_list = session_list
         self.test_cases = []
         self.report_list = []
-
-    def append_case(self, case: TestCase):
-        self.test_cases.append(case)
-
-    def check(self, extra_cases=[]):
-        self.report_list = []
-
-        def run_and_append(report_, f, target):
-            try:
-                fields = f(target)
-                if len(fields) == 2:
-                    result, exception = fields[0], fields[1]
-                    report_lines = None
-                elif len(fields) == 3:
-                    result, exception, report_lines = fields[0], fields[1], fields[2]
-                else:
-                    raise RuntimeError("invalid return fields")
-            except Exception as e:
-                # 获取异常堆栈信息
-                stack_trace = traceback.format_exc()
-                result, exception, report_lines = False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None
-
-            if result is not None:
-                report_.case_results.append((result, exception, report_lines))
-
-        for case in self.test_cases + extra_cases:
-            if isinstance(case, SingleRequestCase):
-                report = Report(case.name, case.expectation, "SingleRequestCase")
-                for session in self.session_list:
-                    for transaction in session.transactions:
-                        run_and_append(report, case.rsp_checker, transaction)
-            elif isinstance(case, SingleSessionCase):
-                report = Report(case.name, case.expectation, "SingleSessionCase")
-                for session in self.session_list:
-                    run_and_append(report, case.session_checker, session)
-            elif isinstance(case, AllSessionCase):
-                report = Report(case.name, case.expectation, "AllSessionCase")
-                run_and_append(report, case.session_list_checker, self.session_list)
-            else:
-                raise RuntimeError("unknown case type")
-
-            self.report_list.append(report)
-
-    def report(self):
-        # TODO
-        return self.report_list

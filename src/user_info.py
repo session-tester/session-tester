@@ -26,19 +26,3 @@ class UserInfoGenerator:
 
     def generate(self) -> List[UserInfo]:
         raise NotImplementedError
-
-
-# Load from offline files
-
-# 固定产生用户信息
-
-
-def demo_userinfo_generator(n):
-    for i in range(n):
-        user_info = UserInfo()
-        user_info.userid = f"lottery-test-{i:05}"
-        user_info.area = "1"
-        user_info.plat = "2"
-        user_info.partition = "100"
-        user_info.role_id = None
-        yield user_info
