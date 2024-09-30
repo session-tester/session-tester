@@ -1,11 +1,9 @@
 import queue
 import uuid
-from typing import List, Tuple, Dict, Any
+from typing import List
 
 from demo.demo_svr import calc_sig
-from src import Session, UserInfo, Tester, TestSuite
-from src.session import HttpTransaction
-from src.session_maintainer import SessionMaintainerBase
+from src import Session, UserInfo, Tester, TestSuite, CheckResult, HttpTransaction, SessionMaintainerBase
 
 
 class SessionMaintainer(SessionMaintainerBase):
@@ -44,7 +42,7 @@ class T(TestSuite):
     session_maintainer = SessionMaintainer
 
     @staticmethod
-    def chk_rsp_sig(s: HttpTransaction) -> Tuple[bool, str]:
+    def chk_rsp_sig(s: HttpTransaction) -> CheckResult:
         """单请求-签名校验:
         1. 接口返回sig字段
         2. sig字段与user_id, round, items计算结果一致
@@ -53,21 +51,21 @@ class T(TestSuite):
         rsp = s.rsp_json()
         sig = calc_sig(rsp.get("user_id", ""), req.get("round", 0), rsp.get("items", []))
         if sig == rsp.get("signature"):
-            return True, "sig check pass"
-        return False, f"sig check failed, {s.response}"
+            return CheckResult(True, "sig check pass")
+        return CheckResult(False, f"sig check failed, {s.response}")
 
     @staticmethod
-    def chk_no_repeat_item(s: HttpTransaction) -> Tuple[bool, str]:
+    def chk_no_repeat_item(s: HttpTransaction) -> CheckResult:
         """单请求-返回道具重复性校验:
         1. 返回结果中items字段不重复
         """
         items = s.rsp_json().get("items", [])
         if len(set(items)) == len(items):
-            return True, ""
-        return False, f"items repeat, {s.response}"
+            return CheckResult(True)
+        return CheckResult(False, f"items repeat, {s.response}")
 
     @staticmethod
-    def chk_no_repeat_item_in_all_sessions(s: Session) -> Tuple[bool, str]:
+    def chk_no_repeat_item_in_all_sessions(s: Session) -> CheckResult:
         """
         单用户-返回道具重复性校验:
         1. 所有请求返回结果中items字段不重复
@@ -77,12 +75,12 @@ class T(TestSuite):
             items = t.rsp_json().get("items", [])
             for item in items:
                 if item in item_set:
-                    return False, f"item[{item}] repeat, {t}"
+                    return CheckResult(False, f"item[{item}] repeat, {t}")
                 item_set.add(item)
-        return True, ""
+        return CheckResult(True)
 
     @staticmethod
-    def chk_items_dist_in_all_sessions(ss: List[Session]) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    def chk_items_dist_in_all_sessions(ss: List[Session]) -> CheckResult:
         """
         返回道具分布校验:
         1. 所有请求返回结果中items字段分布均匀
@@ -96,7 +94,7 @@ class T(TestSuite):
 
         dist_detail = [{"item": k, "count": v} for k, v in sorted(item_dist.items())]
 
-        return True, "", dist_detail
+        return CheckResult(True, "", dist_detail)
 
 
 def main():

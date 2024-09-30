@@ -1,4 +1,5 @@
-from typing import Tuple, Callable, List
+from dataclasses import dataclass
+from typing import Callable, List, Optional, Any
 
 from .session import HttpTransaction, Session
 
@@ -7,6 +8,13 @@ class TestCase(object):
     def __init__(self, name: str, expectation: str):
         self.name = name
         self.expectation = expectation
+
+
+@dataclass
+class CheckResult:
+    result: bool
+    exception: Optional[str] = None
+    report_lines: Optional[List[Any]] = None
 
 
 def overwrite_name_and_expectation(name, expectation, doc):
@@ -35,7 +43,7 @@ def overwrite_name_and_expectation(name, expectation, doc):
 # 单个请求检查
 class SingleRequestCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
-                 rsp_checker: Callable[[HttpTransaction], Tuple[bool, str]] = None):
+                 rsp_checker: Callable[[HttpTransaction], CheckResult] = None):
         if rsp_checker is None:
             raise RuntimeError("rsp_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, rsp_checker.__doc__)
@@ -46,7 +54,7 @@ class SingleRequestCase(TestCase):
 # 单个会话检查
 class SingleSessionCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
-                 session_checker: Callable[[Session], Tuple[bool, str]] = None):
+                 session_checker: Callable[[Session], CheckResult] = None):
         if session_checker is None:
             raise RuntimeError("session_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, session_checker.__doc__)
@@ -57,7 +65,7 @@ class SingleSessionCase(TestCase):
 # 全体会话检查
 class AllSessionCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
-                 session_list_checker: Callable[[List[Session]], Tuple[bool, str]] = None):
+                 session_list_checker: Callable[[List[Session]], CheckResult] = None):
         if session_list_checker is None:
             raise RuntimeError("session_list_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, session_list_checker.__doc__)
@@ -72,7 +80,7 @@ class Report(TestCase):
         self.result = None
         self.bad_case = None
         self.ext_report = []
-        self.case_results = []
+        self.case_results: List[CheckResult] = []
 
     def summary(self):
         if not self.case_results:
@@ -81,14 +89,14 @@ class Report(TestCase):
         self.result = "通过"
 
         self.ext_report = []
-        for result, exception, report_lines in self.case_results:
-            if report_lines is not None:
-                self.ext_report += report_lines
+        for case_result in self.case_results:
+            if case_result.report_lines is not None:
+                self.ext_report += case_result.report_lines
 
-        for result, exception, report_lines in self.case_results:
-            if not result:
+        for case_result in self.case_results:
+            if not case_result.result:
                 self.result = "未通过"
-                self.bad_case = exception
+                self.bad_case = case_result.exception
                 return
 
     def summary_dict(self):

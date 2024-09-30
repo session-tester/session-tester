@@ -25,7 +25,7 @@ class Tester(object):
         if len(names) != len(set(names)):
             raise ValueError("Duplicate test suite names")
 
-    def run(self, only_check=False, session_cnt_to_check: int = 0, clear_session=False):
+    def run(self, only_check=False, clear_session=False):
         if clear_session and only_check:
             raise ValueError("clear_session and only_check cannot be True at the same time")
 

@@ -8,7 +8,7 @@ from typing import List
 
 from . import Session, Client
 from .session_maintainer import SessionMaintainerBase
-from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase
+from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase, CheckResult
 from .utils import func_to_case
 
 _session_checker_prefix = "chk"
@@ -124,21 +124,13 @@ class TestSuite(object):
 
         def run_and_append(report_, f, target):
             try:
-                fields = f(target)
-                if len(fields) == 2:
-                    result, exception = fields[0], fields[1]
-                    report_lines = None
-                elif len(fields) == 3:
-                    result, exception, report_lines = fields[0], fields[1], fields[2]
-                else:
-                    raise RuntimeError("invalid return fields")
+                check_result = f(target)
             except Exception as e:
                 # 获取异常堆栈信息
                 stack_trace = traceback.format_exc()
-                result, exception, report_lines = False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None
+                check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
 
-            if result is not None:
-                report_.case_results.append((result, exception, report_lines))
+            report_.case_results.append(check_result)
 
         self.report_list = []
         for case in self.auto_gen_test_cases():

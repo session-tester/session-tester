@@ -25,10 +25,10 @@
 - 将测试用例与函数相结合，通过函数注释生成测试报告
 - 自动捕获`chk_`开头的测试函数，无需注册
 - 多语言支持
+- 多模块支持
 
 TODO:
 
-- 多模块支持
 - 提供更多的加载用户数据的工具
 - 累积更多的校验函数
 - 自动生成测试用例
@@ -38,36 +38,10 @@ TODO:
 
 ## 二、基本概念
 
-### 2.1 UserInfo
+### 2.1 TestCase
 
-UserInfo 是一个用户信息结构，用于存储用户的基本信息。
-
-`user_id`, `user_type` 等常用字段可以直接写入结构，其他属性，可以写入字典 `extra` 中。
-
-### 2.2 HttpTransaction
-
-HttpTransaction 是一个 HTTP 事务结构，用于存储 HTTP 请求和响应的相关信息，包括请求时间、请求、响应、状态码、耗时等。
-
-用于后续分析和验证。
-
-### 2.3 Session
-
-Session 是一个会话结构，用于存储单个用户的多次请求和响应，以及用户的一些状态。
-
-Session 是存储的单元，每个对应一个文件存放在 test_sessions 目录下。该目录可以通过 `TEST_SESSION_DIR` 环境变量配置。
-
-SessionMaintainer 是一个会话维护器，用户必须继承并实现其四个方法，这4个方法伴随着一个会话的生命周期：
-
-- ``start_func`` 会话开始时调用，可以用于初始化Session，比如拉去用户附加信息、清理用户缓存状态
-- ``req_wrapper`` 用于根据会话状态，封装当次请求包的内容
-- ``session_update_func`` 用于处理请求返回，更新会话状态
-- ``stop_func`` 判断会话是否需要停止
-
-![session_lifecycle.png](docs%2Fsession_lifecycle.png)
-
-### 2.4 TestCase 与检查函数
-
-TestCase 是一个测试用例结构，用于存储测试用例的相关信息，包括测试名称、测试函数、测试结果等。
+**TestCase(测试用例)** 针对一项独立逻辑功能进行逻辑校验。
+每个测试用例最终会在测试报告中生成一条汇总信息，包括测试用例名称、预期结果、是否通过、异常信息等，*可选择*额外输出一份独立的测试报告。
 
 TestCase 有三类，并对应不同的校验函数：
 
@@ -75,15 +49,47 @@ TestCase 有三类，并对应不同的校验函数：
 - SingleSessionCase，校验单一会话，校验函数即单个用户多次请求返回，输入参数为 `Session`
 - AllSessionCase，校验所有会话，即所有用户多次请求返回，校验函数输入参数为 `List[Session]`
 
-### 2.5 Tester
+比如，以下几项可以分别作为单独的测试用例存在：
 
-Tester 是对以上发送接收、会话维护、测试用例、报告生成等功能的封装。
+- 一次返回中没有相同的推荐信息
+- 多次的返回结果中没有相同的推荐信息
+- 所有用户的返回的道具信息，符合概率分布
 
-创建 Tester 维护着 `label`、`user_info_queue`、`url`、`req_wrapper`、`stop_func`、`title` 等信息。
+## 2.2 TestSuite/Tester
 
-`label` 可以自己定义，用于隔离不同环境、活动的会话数据。
+**TestSuite(测试套件)** 用于组织和执行测试用例，包含一个组测试用例和一个会话维持器，这一组测试用例将会对同一批请求返回进行校验。
 
-Tester 提供了 `run()` 方法，用于执行测试用例，并生成测试报告。该函数需要传入测试用例、检查数量、是否只检查（无需重复发送请求）等参数。
+不同的TestSuite 使用不同的请求进行校验。如果服务针对不同类型的用户，提供不同概率的道具产出，则可以使用多个的 TestSuite 加载不同类型的用户。
+
+**Tester** 则是包含一个或多个TestSuite，来运行TestSuite 并将结果汇总，产生测试报告。
+
+比如以下三项均为一个测试用例
+
+一个测试用例结构，用于存储测试用例的相关信息，包括测试名称、测试函数、测试结果等。
+
+### 2.3 UserInfo/HttpTransaction/Session
+
+**UserInfo** 是一个用户信息结构，用于存储用户的基本信息。
+`user_id`, `user_type` 等常用字段可以直接写入结构，其他属性，可以写入字典 `extra` 中。
+
+**HttpTransaction** 是一个 HTTP 事务结构，用于存储 HTTP 请求和响应的相关信息，包括请求时间、请求、响应、状态码、耗时等，用于后续分析和验证。
+
+**Session** 是一个会话结构，用于存储单个用户的多次请求和响应，以及用户的一些状态。
+Session 是存储的单元，每个对应一个文件存放在 test_sessions 目录下。该目录可以通过 `TEST_SESSION_DIR` 环境变量配置。
+
+### 2.4 SessionMaintainer
+
+SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`用于存储用户信息。
+使用者需要指定URL、HTTP方法，另外须简单继承并实现其四个方法，这4个方法伴随着一个会话的生命周期：
+
+- ``start_func`` 会话开始时调用，可以用于初始化Session，比如拉去用户附加信息、清理用户缓存状态
+- ``req_wrapper`` 用于根据会话状态，封装当次请求包的内容
+- ``session_update_func`` 用于处理请求返回，更新会话状态
+- ``stop_func`` 判断会话是否需要停止
+
+另外，方法 ``load_user_info()`` 用于用户信息太大时的加载，可以边运行边加载。如果数据量少，也可以直接放到 ``user_info_queue`` 中。
+
+![session_lifecycle.png](docs%2Fsession_lifecycle.png)
 
 ### 2.6 测试报告
 
