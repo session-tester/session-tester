@@ -38,7 +38,7 @@ TODO:
 
 ## 二、基本概念
 
-### 2.1 TestCase
+### 2.1 TestCase/CheckResult
 
 **TestCase(测试用例)** 针对一项独立逻辑功能进行逻辑校验。
 每个测试用例最终会在测试报告中生成一条汇总信息，包括测试用例名称、预期结果、是否通过、异常信息等，*可选择*额外输出一份独立的测试报告。
@@ -82,10 +82,10 @@ Session 是存储的单元，每个对应一个文件存放在 test_sessions 目
 SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`用于存储用户信息。
 使用者需要指定URL、HTTP方法，另外须简单继承并实现其四个方法，这4个方法伴随着一个会话的生命周期：
 
-- ``start_func`` 会话开始时调用，可以用于初始化Session，比如拉去用户附加信息、清理用户缓存状态
+- ``init_session`` 会话开始时调用，可以用于初始化Session，比如拉去用户附加信息、清理用户缓存状态
 - ``req_wrapper`` 用于根据会话状态，封装当次请求包的内容
-- ``session_update_func`` 用于处理请求返回，更新会话状态
-- ``stop_func`` 判断会话是否需要停止
+- ``update_session`` 用于处理请求返回，更新会话状态
+- ``should_stop_session`` 判断会话是否需要停止
 
 另外，方法 ``load_user_info()`` 用于用户信息太大时的加载，可以边运行边加载。如果数据量少，也可以直接放到 ``user_info_queue`` 中。
 
@@ -134,7 +134,7 @@ SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`�
 
 ```python
 @staticmethod
-def start_func(s: Session):
+def init_session(s: Session):
     s.ext_state.update({"items": [], "round": 0})
 ```
 
@@ -144,7 +144,7 @@ def start_func(s: Session):
 
 ```python
 @staticmethod
-def stop_func(s: Session) -> bool:
+def should_stop_session(s: Session) -> bool:
     return len(s.transactions) >= 20
 ```
 
@@ -154,7 +154,7 @@ def stop_func(s: Session) -> bool:
 
 ```python
 @staticmethod
-def session_update_func(s: Session):
+def update_session(s: Session):
     o = s.transactions[-1].rsp_json()
     s.ext_state["items"] += o["items"]
     s.ext_state["round"] = o["next_round"]
@@ -166,7 +166,7 @@ def session_update_func(s: Session):
 
 ```python
 @staticmethod
-def wrap_data_func(s: Session):
+def wrap_req(s: Session):
     ui = s.user_info
     items_owned = s.ext_state.get("items", [])
     round_ = s.ext_state.get("round", 0)
@@ -285,3 +285,13 @@ t.run(
 并且会在 ``test_reports`` 目录下生成报告：
 
 ![report_location_cn.png](docs%2Freport_location_cn.png)
+
+# FAQ
+
+## 为什么要将load_user_info和 session的维护分开？
+
+如果将用户信息的加载放在 init_session() 中看上去会简单一些，但是往往用户数据的加载是需要单独去批量拉取，放在init_session中会打乱这个加载过程。
+
+## 为什么 load_user_info 是成员方法，而其他四个是静态方法？
+
+因为 load_user_info 需要往一个队列里塞数据，需依附于一个具体的对象。后者于具体的示例无关，仅与传递的参数Session有关。

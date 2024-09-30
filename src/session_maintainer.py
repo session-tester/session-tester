@@ -17,17 +17,17 @@ class SessionMaintainerBase(object):
             raise RuntimeError("user_info_queue is empty")
 
     @staticmethod
-    def wrap_data_func(s: Session):
+    def init_session(_: Session):
         raise NotImplementedError
 
     @staticmethod
-    def start_func(_: Session):
+    def wrap_req(_: Session):
         raise NotImplementedError
 
     @staticmethod
-    def session_update_func(_: Session):
+    def update_session(_: Session):
         raise NotImplementedError
 
     @staticmethod
-    def stop_func(_: Session) -> bool:
+    def should_stop_session(_: Session) -> bool:
         raise NotImplementedError

@@ -15,22 +15,22 @@ class SessionMaintainer(SessionMaintainerBase):
             self.user_info_queue.put(UserInfo(userid=uuid.uuid4().hex, extra={"index": i}))
 
     @staticmethod
-    def start_func(s: Session):
+    def init_session(s: Session):
         s.ext_state.update({"items": [], "round": 0})
 
     @staticmethod
-    def wrap_data_func(s: Session):
+    def wrap_req(s: Session):
         ui = s.user_info
         items_owned = s.ext_state.get("items", [])
         round_ = s.ext_state.get("round", 0)
         return {"user_id": ui.userid, "round": round_, "items_owned": items_owned}
 
     @staticmethod
-    def stop_func(s: Session) -> bool:
+    def should_stop_session(s: Session) -> bool:
         return len(s.transactions) >= 20
 
     @staticmethod
-    def session_update_func(s: Session):
+    def update_session(s: Session):
         o = s.transactions[-1].rsp_json()
         s.ext_state["items"] += o["items"]
         s.ext_state["round"] = o["next_round"]

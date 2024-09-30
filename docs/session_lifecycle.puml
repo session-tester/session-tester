@@ -4,7 +4,7 @@ start
 
 partition "Session Life Cycle" {
 
-:start_func();
+:init_session();
 
 repeat
 rectangle "Request/Response" {
@@ -14,9 +14,9 @@ rectangle "Request/Response" {
   -> rsp;
 }
 
-:session_update_func();
+:update_session();
 
-repeat while (stop_func())  is (True) not (False)
+repeat while (should_stop_session())  is (True) not (False)
 
 }
 stop

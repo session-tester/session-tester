@@ -21,8 +21,8 @@ class Client(object):
 
     # 这四个函数从session中拿信息做处理
     def run(self):
-        if self.session_maintainer.start_func is not None:
-            self.session_maintainer.start_func(self.session)
+        if self.session_maintainer.init_session is not None:
+            self.session_maintainer.init_session(self.session)
 
         while True:
             http_trans = HttpTransaction(
@@ -32,7 +32,7 @@ class Client(object):
                 request_time=None)
 
             def send_request():
-                req = self.session_maintainer.wrap_data_func(self.session)
+                req = self.session_maintainer.wrap_req(self.session)
                 if isinstance(req, dict) or isinstance(http_trans.request, list):
                     r = self.http_session.post(self.session_maintainer.url, json=req)
                     http_trans.request = json.JSONEncoder().encode(req)
@@ -56,10 +56,10 @@ class Client(object):
             if r.status_code != 200:
                 raise RuntimeError(f"url: {self.session_maintainer.url}, code: {r.status_code}), rsp: {r.text}")
 
-            if self.session_maintainer.session_update_func is not None:
-                self.session_maintainer.session_update_func(self.session)
+            if self.session_maintainer.update_session is not None:
+                self.session_maintainer.update_session(self.session)
 
-            if self.session_maintainer.stop_func is None or self.session_maintainer.stop_func(self.session):
+            if self.session_maintainer.should_stop_session is None or self.session_maintainer.should_stop_session(self.session):
                 break
 
     def __del__(self):
