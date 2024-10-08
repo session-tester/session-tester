@@ -14,7 +14,7 @@ if not os.path.exists(test_report_dir):
     os.makedirs(test_report_dir)
 
 
-class Tester:
+class Tester():
     def __init__(self,
                  name: str,
                  test_suites: List[TestSuite]):
