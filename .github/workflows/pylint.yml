@@ -20,4 +20,16 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files '*.py') > pylint_output.txt || true
+        tail -n 10 pylint_output.txt
+
+    - name: Check pylint score
+      run: |
+        score=$(tail -n 10 pylint_output.txt | grep "Your code has been rated at" | awk '{print $7}' | cut -d'/' -f1)
+        min_score=8.0
+        if (( $(echo "$score < $min_score" | bc -l) )); then
+          echo "Pylint score ($score) is below the minimum required score ($min_score)."
+          exit 1
+        else
+          echo "Pylint score ($score) meets the minimum required score ($min_score)."
+        fi
