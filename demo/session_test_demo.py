@@ -39,8 +39,6 @@ class SessionMaintainer(SessionMaintainerBase):
 class T(TestSuite):
     """测试模块"""
 
-    session_maintainer = SessionMaintainer
-
     @staticmethod
     def chk_rsp_sig(s: HttpTransaction) -> CheckResult:
         """单请求-签名校验:
