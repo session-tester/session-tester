@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "session_tester"
+version = "0.1.0"
+description = "Session Tester Python package"
+authors = [
+    { name="Pan Zhongxian", email="panzhongxian0532@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.6"
+license = { text="MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/session-tester/session-tester"
+"Documentation" = "https://github.com/session-tester"
+"Source Code" = "https://github.com/session-tester/session-tester"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pylint]
+max-line-length = 120
+disable = ["C0103", "C0114", "C0115", "C0116", "W1514", "W0718", "W1203"]
+
