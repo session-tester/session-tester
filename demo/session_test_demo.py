@@ -3,7 +3,7 @@ import uuid
 from typing import List
 
 from demo.demo_svr import calc_sig
-from src import Session, UserInfo, Tester, TestSuite, CheckResult, HttpTransaction, SessionMaintainerBase
+from session_tester import Session, UserInfo, Tester, TestSuite, CheckResult, HttpTransaction, SessionMaintainerBase
 
 
 class SessionMaintainer(SessionMaintainerBase):
