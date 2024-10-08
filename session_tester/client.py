@@ -10,7 +10,7 @@ from .session_maintainer import SessionMaintainerBase
 
 
 # Client 用于收发HTTP请求的
-class Client():
+class Client:
     http_session_lock = threading.Lock()
     http_session_queue = queue.Queue()
 
