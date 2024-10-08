@@ -2,19 +2,23 @@
 
 start
 
+skinparam dpi 300
+skinparam activityDiamondBackgroundColor #EED2D3
+
+
 partition "Session Life Cycle" {
 
-:init_session();
+#EED2D3:init_session();
 
 repeat
 rectangle "Request/Response" {
-  :wrap_req_func();
+  #EED2D3:wrap_req();
   -> req;
   :Send and Receive;
   -> rsp;
 }
 
-:update_session();
+#EED2D3:update_session();
 
 repeat while (should_stop_session())  is (True) not (False)
 

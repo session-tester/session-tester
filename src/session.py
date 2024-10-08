@@ -96,6 +96,17 @@ class IDGenerator:
 
 
 class Session(IDGenerator):
+
+    def __init__(self, label: str, create_flag=True):
+        self.label = label
+        self.user_info: UserInfo = None
+        self.transactions = []
+        self.start_time = None
+        self.session_filename = None
+        self.ext_state = dict()
+        if create_flag:
+            self.session_id = Session.get_next_id(label)
+
     @staticmethod
     def load_session(session_filename: str) -> 'Session':
         with open(session_filename, 'r') as file:
@@ -125,16 +136,6 @@ class Session(IDGenerator):
                 logger.error(f"Failed to load session {session_filename}: {e}")
             id_ -= 1
         return sessions
-
-    def __init__(self, label: str, create_flag=True):
-        self.label = label
-        self.user_info: UserInfo = None
-        self.transactions = []
-        self.start_time = None
-        self.session_filename = None
-        self.ext_state = dict()
-        if create_flag:
-            self.session_id = Session.get_next_id(label)
 
     def create(self, user_info: UserInfo, transactions: List[HttpTransaction],
                start_time: Optional[float] = None) -> 'Session':

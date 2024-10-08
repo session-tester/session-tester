@@ -38,6 +38,8 @@ TODO:
 
 ## 二、基本概念
 
+![framework.png](docs%2Fframework.png)
+
 ### 2.1 TestCase/CheckResult
 
 **TestCase(测试用例)** 针对一项独立逻辑功能进行逻辑校验。
@@ -124,7 +126,7 @@ SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`�
 
 接下来，我们针对上述逻辑进行测试
 
-### 3.2 定义 SessionMaintainer
+### 4.1 定义 SessionMaintainer
 
 为了维护会话，我们需要定义一个 SessionMaintainer 类。
 
@@ -173,7 +175,7 @@ def wrap_req(s: Session):
     return {"user_id": ui.userid, "round": round_, "items_owned": items_owned}
 ```
 
-### 3.3 定义测试用例
+### 4.2 定义测试用例
 
 三类测试用例，接收的参数不同，分别是 `HttpTransaction`、`Session`、`List[Session]`。
 
@@ -237,7 +239,7 @@ def chk_items_dist_in_all_sessions(ss: List[Session]):
 
 ![test_report_dist_detail](docs%2Ftest_report_dist_detail_cn.png)
 
-### 3.4 执行测试
+### 4.3 执行测试
 
 上述工作都准备好之后，就可以运行测试并校验结果了。
 
