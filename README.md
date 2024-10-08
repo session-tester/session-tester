@@ -91,8 +91,6 @@ SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`�
 
 另外，方法 ``load_user_info()`` 用于用户信息太大时的加载，可以边运行边加载。如果数据量少，也可以直接放到 ``user_info_queue`` 中。
 
-![session_lifecycle.png](docs%2Fsession_lifecycle.png)
-
 ### 2.6 测试报告
 
 测试报告是一个Excel文件，包括汇总表、检测详情表。
