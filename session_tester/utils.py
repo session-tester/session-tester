@@ -31,8 +31,8 @@ def func_to_case(name: str, func) -> TestCase:
         if not case.expectation:
             raise ValueError(f"Function {name} should have an expectation")
         return case
-    else:
-        raise ValueError(f"Function {name} should have at least one parameter")
+
+    raise ValueError(f"Function {name} should have at least one parameter")
 
 
 def auto_gen_cases_from_chk_func(checker_prefix=_session_checker_prefix, module_name="__main__"):

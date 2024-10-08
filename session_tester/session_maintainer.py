@@ -3,7 +3,7 @@ import queue
 from .session import Session
 
 
-class SessionMaintainerBase(object):
+class SessionMaintainerBase():
     url: str = None
     http_method: str = "POST"
 

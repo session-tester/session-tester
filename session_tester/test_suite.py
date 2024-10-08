@@ -3,18 +3,17 @@ import inspect
 import queue
 import threading
 import time
-import traceback
 from typing import List
 
 from . import Session, Client
 from .session_maintainer import SessionMaintainerBase
-from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase, CheckResult
+from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase
 from .utils import func_to_case
 
 _session_checker_prefix = "chk"
 
 
-class TestSuite(object):
+class TestSuite:
     def __init__(self, name=None, session_maintainer: SessionMaintainerBase = None, session_cnt_to_check=0):
         self.name = name
         if name is None:
@@ -41,7 +40,7 @@ class TestSuite(object):
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name.startswith(_session_checker_prefix):
                 func = getattr(cls, node.name)
-                if isinstance(func, ast.FunctionDef) and func.name.startswith("chk"):
+                if isinstance(func, ast.FunctionDef) and func.name.startswith(_session_checker_prefix):
                     func = getattr(cls, func.name)
                 if isinstance(cls.__dict__.get(func.__name__), staticmethod):
                     case = func_to_case(node.name, func)
@@ -99,7 +98,7 @@ class TestSuite(object):
         if not q.empty() and q.qsize() > 0:
             thread_cnt = min(thread_cnt, q.qsize())
 
-        for i in range(thread_cnt):
+        for _ in range(thread_cnt):
             t = SendWorker(self.name, self.session_maintainer)
             t_list.append(t)
 
@@ -122,30 +121,18 @@ class TestSuite(object):
             raise ValueError(
                 f"No enough sessions data found. expect[{self.session_cnt_to_check}], got[{len(session_list)}]")
 
-        def run_and_append(report_, f, target):
-            try:
-                check_result = f(target)
-            except Exception as e:
-                # 获取异常堆栈信息
-                stack_trace = traceback.format_exc()
-                check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
-
-            report_.case_results.append(check_result)
-
         self.report_list = []
         for case in self.auto_gen_test_cases():
             if isinstance(case, SingleRequestCase):
                 report = Report(case.name, case.expectation, "SingleRequestCase")
-                for session in session_list:
-                    for transaction in session.transactions:
-                        run_and_append(report, case.rsp_checker, transaction)
+                report.case_results = case.batch_check(
+                    [transaction for session in session_list for transaction in session.transactions])
             elif isinstance(case, SingleSessionCase):
                 report = Report(case.name, case.expectation, "SingleSessionCase")
-                for session in session_list:
-                    run_and_append(report, case.session_checker, session)
+                report.case_results = case.batch_check(session_list)
             elif isinstance(case, AllSessionCase):
                 report = Report(case.name, case.expectation, "AllSessionCase")
-                run_and_append(report, case.session_list_checker, session_list)
+                report.case_results = case.batch_check([session_list])
             else:
                 raise RuntimeError("unknown case type")
 

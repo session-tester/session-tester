@@ -1,13 +1,30 @@
+import traceback
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Any
 
 from .session import HttpTransaction, Session
 
 
-class TestCase(object):
+class TestCase:
     def __init__(self, name: str, expectation: str):
         self.name = name
         self.expectation = expectation
+
+    def check(self, _: Any):
+        raise NotImplementedError
+
+    def batch_check(self, arg_list: List[Any]):
+        ret = []
+        for arg in arg_list:
+            try:
+                check_result = self.check(arg)
+            except Exception as e:
+                # 获取异常堆栈信息
+                stack_trace = traceback.format_exc()
+                check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
+
+            ret.append(check_result)
+        return ret
 
 
 @dataclass
@@ -50,6 +67,9 @@ class SingleRequestCase(TestCase):
         super().__init__(name, expectation)
         self.rsp_checker = rsp_checker
 
+    def check(self, transaction: HttpTransaction):
+        return self.rsp_checker(transaction)
+
 
 # 单个会话检查
 class SingleSessionCase(TestCase):
@@ -60,6 +80,9 @@ class SingleSessionCase(TestCase):
         name, expectation = overwrite_name_and_expectation(name, expectation, session_checker.__doc__)
         super().__init__(name, expectation)
         self.session_checker = session_checker
+
+    def check(self, session: Session):
+        return self.session_checker(session)
 
 
 # 全体会话检查
@@ -72,10 +95,14 @@ class AllSessionCase(TestCase):
         super().__init__(name, expectation)
         self.session_list_checker = session_list_checker
 
+    def check(self, session_list: List[Session]):
+        return self.session_list_checker(session_list)
 
-class Report(TestCase):
+
+class Report:
     def __init__(self, name: str, expectation: str, case_type: str):
-        super().__init__(name, expectation)
+        self.name = name
+        self.expectation = expectation
         self.case_type = case_type
         self.result = None
         self.bad_case = None
@@ -114,7 +141,7 @@ class Report(TestCase):
         return f"{self.name} {self.expectation} {self.case_type} {self.result} {self.ext_report}"
 
 
-class BatchTester(object):
+class BatchTester():
     def __init__(self, title, session_list: List[Session] = None):
         self.title = title
         self.session_list = session_list

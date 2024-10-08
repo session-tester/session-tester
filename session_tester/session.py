@@ -103,7 +103,7 @@ class Session(IDGenerator):
         self.transactions = []
         self.start_time = None
         self.session_filename = None
-        self.ext_state = dict()
+        self.ext_state = {}
         if create_flag:
             self.session_id = Session.get_next_id(label)
 
@@ -121,7 +121,7 @@ class Session(IDGenerator):
             try:
                 os.remove(filename)
             except Exception as e:
-                logger.error(f"Failed to remove session {filename}: {e}")
+                logger.error("Failed to remove session {%s}: {%s}", filename, e)
 
     @staticmethod
     def load_sessions(label: str, n: int = 100) -> List['Session']:
@@ -133,7 +133,7 @@ class Session(IDGenerator):
                 s = Session.load_session(os.path.join(test_session_dir, session_filename))
                 sessions.append(s)
             except Exception as e:
-                logger.error(f"Failed to load session {session_filename}: {e}")
+                logger.error("Failed to load session {%s}: {%s}", session_filename, e)
             id_ -= 1
         return sessions
 
@@ -144,7 +144,7 @@ class Session(IDGenerator):
         self.start_time = start_time
         # 创建一个session文件
         self.session_filename = f"{self.label}-{self.session_id:08d}.json"
-        self.ext_state = dict()
+        self.ext_state = {}
         self.dump()
         return self
 

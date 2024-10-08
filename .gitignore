@@ -10,3 +10,6 @@ test_sessions
 data
 test_reports
 .pytest_cache
+.DS_Store
+dist
+*.egg-info

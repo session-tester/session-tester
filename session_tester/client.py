@@ -10,7 +10,7 @@ from .session_maintainer import SessionMaintainerBase
 
 
 # Client 用于收发HTTP请求的
-class Client(object):
+class Client():
     http_session_lock = threading.Lock()
     http_session_queue = queue.Queue()
 
@@ -59,7 +59,8 @@ class Client(object):
             if self.session_maintainer.update_session is not None:
                 self.session_maintainer.update_session(self.session)
 
-            if self.session_maintainer.should_stop_session is None or self.session_maintainer.should_stop_session(self.session):
+            if self.session_maintainer.should_stop_session is None or \
+                    self.session_maintainer.should_stop_session(self.session):
                 break
 
     def __del__(self):
