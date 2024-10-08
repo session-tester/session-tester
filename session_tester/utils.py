@@ -9,6 +9,10 @@ from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase, Test
 _session_checker_prefix = "chk"
 
 
+def default_session_checker_prefix():
+    return _session_checker_prefix
+
+
 def func_to_case(name: str, func) -> TestCase:
     signature = inspect.signature(func)
     params = list(signature.parameters.values())

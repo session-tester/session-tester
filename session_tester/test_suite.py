@@ -8,9 +8,7 @@ from typing import List
 from . import Session, Client
 from .session_maintainer import SessionMaintainerBase
 from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase
-from .utils import func_to_case
-
-_session_checker_prefix = "chk"
+from .utils import func_to_case, default_session_checker_prefix
 
 
 class TestSuite:
@@ -38,9 +36,9 @@ class TestSuite:
         check_cases = []
 
         for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name.startswith(_session_checker_prefix):
+            if isinstance(node, ast.FunctionDef) and node.name.startswith(default_session_checker_prefix()):
                 func = getattr(cls, node.name)
-                if isinstance(func, ast.FunctionDef) and func.name.startswith(_session_checker_prefix):
+                if isinstance(func, ast.FunctionDef):
                     func = getattr(cls, func.name)
                 if isinstance(cls.__dict__.get(func.__name__), staticmethod):
                     case = func_to_case(node.name, func)

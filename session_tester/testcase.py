@@ -139,11 +139,3 @@ class Report:
     def __str__(self):
         self.summary()
         return f"{self.name} {self.expectation} {self.case_type} {self.result} {self.ext_report}"
-
-
-class BatchTester():
-    def __init__(self, title, session_list: List[Session] = None):
-        self.title = title
-        self.session_list = session_list
-        self.test_cases = []
-        self.report_list = []
