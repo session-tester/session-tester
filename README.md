@@ -23,7 +23,7 @@ pip install session_tester
 以下是 [demo/session_test_demo.py](demo/session_test_demo.py) 的一个示例。
 四个测试用例包含了三类校验，并且最后一个测试用例产出了额外的详细数据：
 
-![test_report_cn](docs%2Ftest_report_cn.png)
+![test_report_cn](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Ftest_report_cn.png)
 
 除此之外，框架还有其他一些特点：
 
@@ -40,7 +40,7 @@ pip install session_tester
 
 ## 二、基本概念
 
-![framework.png](docs%2Fframework.png)
+![framework.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Fframework.png)
 
 ### 2.1 TestCase/CheckResult
 
@@ -186,7 +186,7 @@ def wrap_req(s: Session):
     return {"user_id": ui.userid, "round": round_, "items_owned": items_owned}
 ```
 
-### 4.2 定义测试套件
+### 4.3 定义测试套件
 
 一次测试包含一个或多个 TestSuite。
 
@@ -195,7 +195,7 @@ def wrap_req(s: Session):
 TestSuite 有 name，TestCase 有 name 和 expectation 用来生成测试报告。
 为了使用简练、并遵循 Test as Code 的原则，我们这里直接将中这些测试用例的函数注释中提取出来。
 
-![test_comment_report.png](docs%2Ftest_comment_report.png)
+![test_comment_report.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Ftest_comment_report.png)
 
 TestSuite 中所有 `chk_` 开头的函数都会被自动识别为测试用例。
 三类测试用例，接收的参数不同，分别是 `HttpTransaction`、`Session`、`List[Session]`，这些函数都需要返回一个 `TestResult`。
@@ -262,9 +262,9 @@ def chk_items_dist_in_all_sessions(ss: List[Session]) -> CheckResult:
 
 这里在有错的 Demo 上其产生的结果如下：
 
-![test_report_dist_detail](docs%2Ftest_report_dist_detail_cn.png)
+![test_report_dist_detail](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Ftest_report_dist_detail_cn.png)
 
-### 4.3 执行测试
+### 4.4 执行测试
 
 上述工作都准备好之后，就可以运行测试并校验结果了。
 
@@ -300,11 +300,11 @@ t.run(
 
 运行时终端会打印过程日志：
 
-![process_logging_cn.png](docs%2Fprocess_logging_cn.png)
+![process_logging_cn.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Fprocess_logging_cn.png)
 
 并且会在 ``test_reports`` 目录下生成报告：
 
-![report_location_cn.png](docs%2Freport_location_cn.png)
+![report_location_cn.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Freport_location_cn.png)
 
 # FAQ
 
