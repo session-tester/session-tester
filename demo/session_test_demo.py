@@ -96,22 +96,15 @@ class T(TestSuite):
 
 
 def main():
-    # 1. 加载用户信息
-    user_info_queue = queue.Queue()
-    for i in range(10):
-        user_info_queue.put(UserInfo(
-            userid=uuid.uuid4().hex,
-            extra={"index": i},
-        ))
 
-    # 2. 创建测试对象
+    # 1. 创建测试对象
     t = Tester(
         name=f"release_12345",
         test_suites=[T(session_maintainer=SessionMaintainer()),
                      T(session_maintainer=SessionMaintainer(), name="test2")],
     )
 
-    # 3. 运行测试用例产生报告
+    # 2. 运行测试用例产生报告
     t.run(
         # session_cnt_to_check=1000,  # 检查的数量，如果用户队列数据大于该数值，实际使用用户队列大小
         # only_check=True,  # 只检查，不发送请求

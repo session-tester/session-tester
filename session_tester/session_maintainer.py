@@ -31,3 +31,30 @@ class SessionMaintainerBase:
     @staticmethod
     def should_stop_session(_: Session) -> bool:
         raise NotImplementedError
+
+
+def sm_n_rounds(n: int):
+    def decorator(cls):
+        class NewClass(cls):
+            @staticmethod
+            def should_stop_session(s: Session) -> bool:
+                return len(s.transactions) >= n
+
+        return NewClass
+
+    return decorator
+
+
+def sm_no_update(cls):
+    class NewClass(cls):
+        @staticmethod
+        def update_session(_: Session):
+            pass
+
+    return NewClass
+
+
+@sm_no_update
+@sm_n_rounds(1)
+class SessionMaintainerOneRound(SessionMaintainerBase):
+    pass

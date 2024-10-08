@@ -23,7 +23,8 @@ class TestCase:
                 stack_trace = traceback.format_exc()
                 check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
 
-            ret.append(check_result)
+            if check_result is not None:
+                ret.append(check_result)
         return ret
 
 
