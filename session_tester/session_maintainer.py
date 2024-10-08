@@ -54,7 +54,17 @@ def sm_no_update(cls):
     return NewClass
 
 
+def sm_no_init(cls):
+    class NewClass(cls):
+        @staticmethod
+        def init_session(_: Session):
+            pass
+
+    return NewClass
+
+
+@sm_no_init
 @sm_no_update
 @sm_n_rounds(1)
-class SessionMaintainerOneRound(SessionMaintainerBase):
+class SessionMaintainerSimple(SessionMaintainerBase):
     pass
