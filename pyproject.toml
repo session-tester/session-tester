@@ -29,4 +29,5 @@ where = ["."]
 [tool.pylint]
 max-line-length = 120
 disable = ["C0103", "C0114", "C0115", "C0116", "W1514", "W0718", "W1203"]
+min-score=9
 
