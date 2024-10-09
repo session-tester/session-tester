@@ -17,7 +17,13 @@
 直接使用 pip 安装：
 
 ```shell
-pip install session_tester
+pip install session-tester
+```
+
+导入模块：
+
+```python
+import session_tester
 ```
 
 以下是 [demo/session_test_demo.py](demo/session_test_demo.py) 的一个示例。
@@ -312,8 +318,8 @@ t.run(
 有几个 `sm_` 开头的修饰器，用于简化 `SessionMaintainer` 的实现。
 
 - ``sm_n_rounds(n)`` 简单判断重发 n 轮请求
-- ``sm_no_update()`` 无需更新状态
-- ``sm_no_init()`` 无初始状态更新
+- ``sm_no_update`` 无需更新状态
+- ``sm_no_init`` 无初始状态更新
 
 # FAQ
 
