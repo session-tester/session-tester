@@ -1,5 +1,10 @@
 # Session Tester - 面向会话的测试框架
 
+<p align="center">
+    <a href="README_en.md">English</a> •
+    <a>中文</a> 
+</p>
+
 一个 **面向会话（多轮请求、状态更新）** 的测试框架库。
 
 测试过程、预期检查、报告都体现在代码上，**Test as Code**。
