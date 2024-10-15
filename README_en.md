@@ -7,8 +7,8 @@
 
 A **session-based (multi-round requests, state updates)** testing framework library.
 
-The testing process, expected checks, and reports are all reflected in the code, embodying the concept of **Test as Code
-**.
+The testing process, expected checks, and reports are all reflected in the code,
+embodying the concept of **Test as Code**.
 
 ## 1. Introduction
 
@@ -47,8 +47,9 @@ Additionally, the framework has other features:
 - Multi-language support
 - Multi-module support
 
-This framework is designed to focus on testing the special scenarios of **single stateful services
-**, where the tested service has only a single HTTP URL. Comprehensive testing frameworks cover a wide range but come with higher usage costs.
+This framework is designed to focus on testing the special scenarios of
+**single stateful services**,
+where the tested service has only a single HTTP URL. Comprehensive testing frameworks cover a wide range but come with higher usage costs.
 
 ## 2. Basic Concepts
 
@@ -91,8 +92,7 @@ A test case structure stores information related to the test case, including the
 **UserInfo
 ** is a user information structure used to store basic user information. Common fields like `user_id` and `user_type` can be directly written into the structure, while other attributes can be written into the `extra` dictionary.
 
-**HttpTransaction
-** is an HTTP transaction structure used to store information related to HTTP requests and responses, including request time, request, response, status code, duration, etc., for subsequent analysis and validation.
+**HttpTransaction** is an HTTP transaction structure used to store information related to HTTP requests and responses, including request time, request, response, status code, duration, etc., for subsequent analysis and validation.
 
 **Session
 ** is a session structure used to store multiple requests and responses of a single user, as well as some user states. Sessions are stored as units, each corresponding to a file in the `test_sessions` directory. This directory can be configured via the `TEST_SESSION_DIR` environment variable.

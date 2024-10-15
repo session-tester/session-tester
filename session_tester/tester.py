@@ -25,7 +25,12 @@ class Tester:
         if len(names) != len(set(names)):
             raise ValueError("Duplicate test suite names")
 
-    def run(self, only_check=False, clear_session=False):
+        for test_suite in test_suites:
+            names = [tc.name for tc in test_suite.auto_gen_test_cases()]
+            if len(names) != len(set(names)):
+                raise ValueError(f"Duplicate test case names in suite {test_suite.name}")
+
+    def run(self, only_check=False, clear_session=False, thread_cnt=50):
         if clear_session and only_check:
             raise ValueError("clear_session and only_check cannot be True at the same time")
 
@@ -36,8 +41,7 @@ class Tester:
 
         if not only_check:
             for test_suite in self.test_suites:
-                # TODO thread_cnt
-                test_suite.do_send()
+                test_suite.do_send(thread_cnt=thread_cnt)
             logger.info("发送请求完成")
 
         for test_suite in self.test_suites:
