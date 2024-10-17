@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "session_tester"
-version = "0.1.0.dev4"
+version = "0.1.0.dev6"
 description = "Session Tester Python package"
 authors = [
     { name="Pan Zhongxian", email="panzhongxian0532@gmail.com" }
@@ -16,6 +16,14 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+# 添加依赖项
+dependencies = [
+    "filelock>=3.16.1",
+    "openpyxl>=3.1.5",
+    "pandas>=2.2.3",
+    "xlsxwriter>=3.2.0",
+    "requests>=2.32.3"  # 注意：requests 应该是小写
 ]
 
 [project.urls]
