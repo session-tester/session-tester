@@ -1,12 +1,11 @@
 import glob
 import json
 import os
+import threading
 from dataclasses import asdict
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-
-from filelock import FileLock
 
 from .logger import logger
 from .user_info import UserInfo
@@ -58,6 +57,7 @@ class HttpTransaction:
 
 class IDGenerator:
     _id = None
+    _lock = threading.Lock()  # 使用线程锁来保护类变量
 
     @classmethod
     def _read_initial_id(cls, file_path):
@@ -79,8 +79,7 @@ class IDGenerator:
 
     @classmethod
     def get_next_id(cls, file_path: str) -> int:
-        lock_path = file_path + ".lock"
-        with FileLock(os.path.join(test_session_dir, lock_path)):
+        with cls._lock:  # 使用线程锁来保护临界区
             if cls._id is None:
                 cls._read_initial_id(file_path)
             cls._id += 1
@@ -89,8 +88,7 @@ class IDGenerator:
 
     @classmethod
     def get_curr_id(cls, file_path: str) -> int:
-        lock_path = file_path + ".lock"
-        with FileLock(os.path.join(test_session_dir, lock_path)):
+        with cls._lock:  # 使用线程锁来保护临界区
             cls._read_initial_id(file_path)
             return cls._id
 

@@ -4,6 +4,8 @@ import threading
 import time
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from .session import HttpTransaction
 from .session_maintainer import SessionMaintainerBase
@@ -33,11 +35,12 @@ class Client:
 
             def send_request():
                 req = self.session_maintainer.wrap_req(self.session)
+                timeout = (1, 5)
                 if isinstance(req, dict) or isinstance(http_trans.request, list):
-                    r = self.http_session.post(self.session_maintainer.url, json=req)
+                    r = self.http_session.post(self.session_maintainer.url, json=req, timeout=timeout)
                     http_trans.request = json.JSONEncoder().encode(req)
                 else:
-                    r = self.http_session.post(self.session_maintainer.url, req)
+                    r = self.http_session.post(self.session_maintainer.url, req, timeout=timeout)
                     http_trans.request = req
 
                 return r
@@ -72,7 +75,21 @@ class Client:
             try:
                 return cls.http_session_queue.get_nowait()
             except:
-                return requests.Session()
+                s = requests.Session()
+
+                # 定义重试策略
+                retry_strategy = Retry(
+                    total=3,  # 总共重试次数
+                    backoff_factor=1,  # 重试间隔时间的倍数
+                    status_forcelist=[429, 500, 502, 503, 504],  # 需要重试的HTTP状态码
+                    allowed_methods=["HEAD", "GET", "OPTIONS", "POST"]  # 需要重试的方法
+                )
+
+                # 创建一个适配器并将其安装到会话中
+                adapter = HTTPAdapter(max_retries=retry_strategy)
+                s.mount("http://", adapter)
+                s.mount("https://", adapter)
+                return s
 
     @classmethod
     def release_session(cls, http_session):
