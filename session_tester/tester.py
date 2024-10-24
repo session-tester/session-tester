@@ -69,6 +69,7 @@ class Tester:
                     "功能点": report.name,
                     "预期结果": report.expectation,
                     "最终结果": report.result,
+                    "通过/总数": f"{report.passed_case_count}/{report.total_case_count}",
                     "异常说明": report.bad_case
                 })
 
@@ -79,9 +80,21 @@ class Tester:
             df = pd.DataFrame(parsed_data)
             df.to_excel(writer, sheet_name="测试汇总", index=False)
 
-            logger.info(f"汇总报告-已成功保存到 {output_file}")
+        logger.info(f"汇总报告-已成功保存到 {output_file}")
 
     def gen_detail_report(self, writer):
+
+        k = set()
+        dup_test_case_name_set = set()
+        for test_suite in self.test_suites:
+            reports = test_suite.report_list
+            for report in reports:
+                report.summary()
+                if not report.ext_report:
+                    continue
+                if report.name in k:
+                    dup_test_case_name_set.add(report.name)
+                k.add(report.name)
 
         for test_suite in self.test_suites:
             reports = test_suite.report_list
@@ -92,7 +105,13 @@ class Tester:
 
                 # 保存为Excel文件
                 ext_df = pd.DataFrame(report.ext_report)
-                ext_df.to_excel(writer, sheet_name=report.name, index=False)
+                if report.name in dup_test_case_name_set:
+                    sheet_name = f"{report.name}({test_suite.name})"
+                else:
+                    sheet_name = report.name
+
+                ext_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            logger.info(f"详细数据-已成功保存到 表-{sheet_name}")
 
     def format(self):
         output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
@@ -106,7 +125,8 @@ class Tester:
             'B': 40,  # 功能点
             'C': 60,  # 预期结果
             'D': 15,  # 最终结果
-            'E': 55  # 异常说明
+            'E': 15,  # 通过/总数
+            'F': 55,  # 异常说明
         }
         for col, width in column_widths.items():
             ws.column_dimensions[col].width = width
@@ -118,9 +138,9 @@ class Tester:
                 if cell.row == 1:
                     cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
                     cell.font = Font(size=16, bold=True)
-                elif cell.column_letter in ['A', 'B', 'D']:
+                elif cell.column_letter in ['A', 'B', 'D', 'E']:
                     cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-                elif cell.column_letter in ['C', 'E']:
+                elif cell.column_letter in ['C', 'F']:
                     cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
 
         # 合并A列连续相同的单元格

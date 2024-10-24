@@ -1,4 +1,3 @@
-import queue
 import uuid
 from typing import List
 
@@ -96,7 +95,6 @@ class T(TestSuite):
 
 
 def main():
-
     # 1. 创建测试对象
     t = Tester(
         name=f"release_12345",

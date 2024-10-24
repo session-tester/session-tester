@@ -109,8 +109,12 @@ class Report:
         self.bad_case = None
         self.ext_report = []
         self.case_results: List[CheckResult] = []
+        self.total_case_count = 0
+        self.passed_case_count = 0
 
     def summary(self):
+        self.total_case_count = 0
+        self.passed_case_count = 0
         if not self.case_results:
             self.result = "未覆盖"
             return
@@ -122,20 +126,15 @@ class Report:
                 self.ext_report += case_result.report_lines
 
         for case_result in self.case_results:
+            self.total_case_count += 1
+            if case_result.result is True:
+                self.passed_case_count += 1
+
+        for case_result in self.case_results:
             if not case_result.result:
                 self.result = "未通过"
                 self.bad_case = case_result.exception
                 return
-
-    def summary_dict(self):
-        self.summary()
-        return {
-            "name": self.name,
-            "expectation": self.expectation,
-            "result": self.result,
-            "bad_case": self.bad_case,
-            "ext_report": self.ext_report
-        }
 
     def __str__(self):
         self.summary()
