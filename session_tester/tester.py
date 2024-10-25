@@ -69,7 +69,12 @@ class Tester:
                     "功能点": report.name,
                     "预期结果": report.expectation,
                     "最终结果": report.result,
-                    "通过/总数": f"{report.passed_case_count}/{report.total_case_count}",
+
+                    "通过": report.passed_case_count,
+                    "未通过": report.not_passed_case_count,
+                    "未覆盖": report.uncover_case_count,
+                    "网络错误": report.finished_with_err_count,
+
                     "异常说明": report.bad_case
                 })
 
@@ -111,7 +116,7 @@ class Tester:
                     sheet_name = report.name
 
                 ext_df.to_excel(writer, sheet_name=sheet_name, index=False)
-            logger.info(f"详细数据-已成功保存到 表-{sheet_name}")
+                logger.info(f"详细数据-已成功保存到 表-{sheet_name}")
 
     def format(self):
         output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
@@ -125,8 +130,11 @@ class Tester:
             'B': 40,  # 功能点
             'C': 60,  # 预期结果
             'D': 15,  # 最终结果
-            'E': 15,  # 通过/总数
-            'F': 55,  # 异常说明
+            'E': 8.5,  # 通过
+            'F': 10,  # 未通过
+            'G': 10,  # 未覆盖
+            'H': 13,  # 网络错误
+            'I': 55,  # 异常说明
         }
         for col, width in column_widths.items():
             ws.column_dimensions[col].width = width
@@ -138,10 +146,10 @@ class Tester:
                 if cell.row == 1:
                     cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
                     cell.font = Font(size=16, bold=True)
-                elif cell.column_letter in ['A', 'B', 'D', 'E']:
-                    cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-                elif cell.column_letter in ['C', 'F']:
+                elif cell.column_letter in ['C', 'I']:
                     cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+                else:  # elif cell.column_letter in ['A', 'B', 'D', 'E', 'G']:
+                    cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
         # 合并A列连续相同的单元格
         start_row = 2

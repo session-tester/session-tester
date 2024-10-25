@@ -114,6 +114,9 @@ class TestSuite:
 
     def check(self):
         # 加载会话结果
+        if self.session_cnt_to_check == 0:
+            self.session_maintainer.load_user_info()
+            self.session_cnt_to_check = self.session_maintainer.user_info_queue.qsize()
         session_list = Session.load_sessions(self.name, n=self.session_cnt_to_check)
         if len(session_list) < self.session_cnt_to_check:
             raise ValueError(
@@ -123,16 +126,33 @@ class TestSuite:
         for case in self.auto_gen_test_cases():
             if isinstance(case, SingleRequestCase):
                 report = Report(case.name, case.expectation, "SingleRequestCase")
-                report.case_results = case.batch_check(
-                    [transaction for session in session_list for transaction in session.transactions])
+                transactions = [transaction for session in session_list for transaction in session.transactions]
+                report.total_case_count = len(transactions)
+                report.finished_with_err_count = len([x for x in transactions if not x.finished_without_error()])
+                report.case_results = case.batch_check([x for x in transactions if x.finished_without_error()])
+
             elif isinstance(case, SingleSessionCase):
                 report = Report(case.name, case.expectation, "SingleSessionCase")
-                report.case_results = case.batch_check(session_list)
+                report.finished_with_err_count = len([x for x in session_list if not x.finished_without_error()])
+                report.total_case_count = len(session_list)
+                report.case_results = case.batch_check([x for x in session_list if x.finished_without_error()])
             elif isinstance(case, AllSessionCase):
                 report = Report(case.name, case.expectation, "AllSessionCase")
-                report.case_results = case.batch_check([session_list])
+                session_list = [x for x in session_list if x.finished_without_error()]
+                if not session_list:
+                    report.uncover_case_count = 1
+                else:
+                    report.case_results = case.batch_check([session_list])
             else:
                 raise RuntimeError("unknown case type")
+
+            for result in report.case_results:
+                if result is None:
+                    report.uncover_case_count += 1
+                elif result.result:
+                    report.passed_case_count += 1
+                else:
+                    report.not_passed_case_count += 1
 
             self.report_list.append(report)
 

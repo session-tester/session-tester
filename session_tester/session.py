@@ -42,6 +42,9 @@ class HttpTransaction:
     def rsp_json_data(self):
         return self.rsp_json()["data"]
 
+    def finished_without_error(self):
+        return self.status_code == 200
+
     @staticmethod
     def from_json(json_str: str) -> 'HttpTransaction':
         data = json.loads(json_str)
@@ -93,12 +96,15 @@ class Session(IDGenerator):
     def __init__(self, label: str, create_flag=True):
         self.label = label
         self.user_info: UserInfo = None
-        self.transactions = []
+        self.transactions: List[HttpTransaction] = []
         self.start_time = None
         self.session_filename = None
         self.ext_state = {}
         if create_flag:
             self.session_id = Session.get_next_id(label)
+
+    def finished_without_error(self):
+        return all([x.finished_without_error() for x in self.transactions])
 
     @staticmethod
     def load_session(session_filename: str) -> 'Session':

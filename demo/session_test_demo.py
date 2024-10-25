@@ -104,9 +104,8 @@ def main():
 
     # 2. 运行测试用例产生报告
     t.run(
-        # session_cnt_to_check=1000,  # 检查的数量，如果用户队列数据大于该数值，实际使用用户队列大小
-        # only_check=True,  # 只检查，不发送请求
-        clear_session=True
+        only_check=True,  # 只检查，不发送请求
+        # clear_session=True
     )
 
 

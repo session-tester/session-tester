@@ -5,6 +5,13 @@ from typing import Callable, List, Optional, Any
 from .session import HttpTransaction, Session
 
 
+@dataclass
+class CheckResult:
+    result: bool
+    exception: Optional[str] = None
+    report_lines: Optional[List[Any]] = None
+
+
 class TestCase:
     def __init__(self, name: str, expectation: str):
         self.name = name
@@ -13,7 +20,7 @@ class TestCase:
     def check(self, _: Any):
         raise NotImplementedError
 
-    def batch_check(self, arg_list: List[Any]):
+    def batch_check(self, arg_list: List[Any]) -> List[CheckResult]:
         ret = []
         for arg in arg_list:
             try:
@@ -22,17 +29,12 @@ class TestCase:
                 # 获取异常堆栈信息
                 stack_trace = traceback.format_exc()
                 check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
+                print(f"checking exception: {e}\nStack trace:\n{stack_trace}")
+                exit()
 
             if check_result is not None:
                 ret.append(check_result)
         return ret
-
-
-@dataclass
-class CheckResult:
-    result: bool
-    exception: Optional[str] = None
-    report_lines: Optional[List[Any]] = None
 
 
 def overwrite_name_and_expectation(name, expectation, doc):
@@ -109,12 +111,12 @@ class Report:
         self.bad_case = None
         self.ext_report = []
         self.case_results: List[CheckResult] = []
-        self.total_case_count = 0
+        self.finished_with_err_count = 0
         self.passed_case_count = 0
+        self.not_passed_case_count = 0
+        self.uncover_case_count = 0
 
     def summary(self):
-        self.total_case_count = 0
-        self.passed_case_count = 0
         if not self.case_results:
             self.result = "未覆盖"
             return
@@ -124,11 +126,6 @@ class Report:
         for case_result in self.case_results:
             if case_result.report_lines is not None:
                 self.ext_report += case_result.report_lines
-
-        for case_result in self.case_results:
-            self.total_case_count += 1
-            if case_result.result is True:
-                self.passed_case_count += 1
 
         for case_result in self.case_results:
             if not case_result.result:

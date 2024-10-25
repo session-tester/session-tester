@@ -50,7 +50,7 @@ class Client:
                 req.headers["Content-Type"] = "application/json"
 
             def send_request():
-                http_trans.request = req
+                http_trans.request = req.req_data
                 http_trans.request_time = datetime.datetime.now()
                 if req.http_method == "GET":
                     r_ = self.http_session.get(req.url, params=req.req_data, headers=req.headers, timeout=req.timeout)
