@@ -1,3 +1,4 @@
+import datetime
 import json
 import queue
 import threading
@@ -7,6 +8,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .logger import logger
+from .request import StReq
 from .session import HttpTransaction
 from .session_maintainer import SessionMaintainerBase
 
@@ -33,31 +36,48 @@ class Client:
                 request=None, response=None, status_code=None,
                 request_time=None)
 
+            req = self.session_maintainer.wrap_req(self.session)
+            if not isinstance(req, StReq):
+                req = StReq(req)
+            if req.url is None:
+                req.url = self.session_maintainer.url
+            if req.http_method is None:
+                req.http_method = self.session_maintainer.http_method
+            if req.headers is None:
+                req.headers = {}
+            if isinstance(req.req_data, dict) or isinstance(req.req_data, list):
+                req.req_data = json.JSONEncoder().encode(req.req_data)
+                req.headers["Content-Type"] = "application/json"
+
             def send_request():
-                req = self.session_maintainer.wrap_req(self.session)
-                timeout = (1, 5)
-                if isinstance(req, dict) or isinstance(http_trans.request, list):
-                    r = self.http_session.post(self.session_maintainer.url, json=req, timeout=timeout)
-                    http_trans.request = json.JSONEncoder().encode(req)
+                http_trans.request = req
+                http_trans.request_time = datetime.datetime.now()
+                if req.http_method == "GET":
+                    r_ = self.http_session.get(req.url, params=req.req_data, headers=req.headers, timeout=req.timeout)
+                elif req.http_method == "POST":
+                    r_ = self.http_session.post(req.url, data=req.req_data, headers=req.headers, timeout=req.timeout)
                 else:
-                    r = self.http_session.post(self.session_maintainer.url, req, timeout=timeout)
-                    http_trans.request = req
+                    raise RuntimeError(f"unsupported http method: {req.http_method}")
+                return r_
 
-                return r
+            r = None
+            for _ in range(req.retry + 1):
+                try:
+                    r = send_request()
+                    if r.status_code == 200:
+                        break
+                except:
+                    time.sleep(0.5)
 
-            try:
-                r = send_request()
-            except:
-                time.sleep(1)
-                # 重试一次
-                r = send_request()
-
+            if r is None:
+                logger.error(f"failed to send request: {req}")
+                break
             http_trans.status_code = r.status_code
             http_trans.response = r.text
             self.session.append_transaction(http_trans)
-
             if r.status_code != 200:
-                raise RuntimeError(f"url: {self.session_maintainer.url}, code: {r.status_code}), rsp: {r.text}")
+                logger.error(f"failed to send request: {req}, status_cod: {r.status_code}, rsp: {r.text}")
+                break
 
             if self.session_maintainer.update_session is not None:
                 self.session_maintainer.update_session(self.session)

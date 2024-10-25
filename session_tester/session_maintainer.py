@@ -1,5 +1,6 @@
 import queue
 
+from .request import StReq
 from .session import Session
 
 
@@ -21,7 +22,7 @@ class SessionMaintainerBase:
         raise NotImplementedError
 
     @staticmethod
-    def wrap_req(_: Session):
+    def wrap_req(_: Session) -> StReq:
         raise NotImplementedError
 
     @staticmethod

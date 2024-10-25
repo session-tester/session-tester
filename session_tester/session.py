@@ -19,15 +19,10 @@ if not os.path.exists(test_session_dir):
 class HttpTransaction:
     url: str  # 存储请求的URL
     method: str  # 存储请求的方法
-    status_code: int  # 存储HTTP状态码
-    request: str  # 存储请求数据（序列化后的字符串）
-    response: str  # 存储响应数据（序列化后的字符串）
-    request_time: datetime  # 存储请求时间
-
-    def __post_init__(self):
-        # 如果 request_time 未传递，则使用当前时间
-        if not isinstance(self.request_time, datetime):
-            self.request_time = datetime.now()
+    status_code: Optional[int]  # 存储HTTP状态码
+    request: Optional[str]  # 存储请求数据（序列化后的字符串）
+    response: Optional[str]  # 存储响应数据（序列化后的字符串）
+    request_time: Optional[datetime] = datetime.now()  # 存储请求时间
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
