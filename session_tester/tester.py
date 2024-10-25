@@ -69,12 +69,10 @@ class Tester:
                     "功能点": report.name,
                     "预期结果": report.expectation,
                     "最终结果": report.result,
-
                     "通过": report.passed_case_count,
                     "未通过": report.not_passed_case_count,
                     "未覆盖": report.uncover_case_count,
                     "网络错误": report.finished_with_err_count,
-
                     "异常说明": report.bad_case
                 })
 
