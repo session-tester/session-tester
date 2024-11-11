@@ -52,13 +52,13 @@ def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callab
     return _dist_dict_to_list(dist, format_ratio)
 
 
-def stat_http_transaction_cost(session_list: List[Session], custom_stat_func: Callable):
+def stat_http_transaction_cost(session_list: List[Session]):
     """统计请求耗时，按照平均值，中位值，P90，P99进行统计"""
     request_times = []
     for s in session_list:
         for t in s.transactions:
-            cost = custom_stat_func(t)
-            request_times.append(cost)
+            if t.cost_time is not None:
+                request_times.append(t.cost_time)
 
     # 计算平均值
     mean_time = np.mean(request_times)
