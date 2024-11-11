@@ -13,3 +13,4 @@ test_reports
 .DS_Store
 dist
 *.egg-info
+.env

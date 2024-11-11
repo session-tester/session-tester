@@ -1,7 +1,7 @@
 import ast
 import inspect
 import sys
-from typing import List
+from typing import List, Callable
 
 from .session import Session, HttpTransaction
 from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase, TestCase
@@ -11,6 +11,43 @@ _session_checker_prefix = "chk"
 
 def default_session_checker_prefix():
     return _session_checker_prefix
+
+
+def _dist_dict_to_list(dist: dict, format_ratio=True):
+    kv_list = list(dist.items())
+    kv_list = sorted(kv_list, key=lambda x: x[1], reverse=True)
+    output = []
+    total = 0
+    for _, v in kv_list:
+        total += v
+
+    for k, v in kv_list:
+        ratio = v / total
+        if format_ratio:
+            output.append({"group": k, "count": v, "ratio": f"{ratio * 100:.2f}%"})
+        else:
+            output.append({"group": k, "count": v, "ratio": ratio})
+    return output
+
+
+def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+    """实验分布校验: 各个实验均有覆盖
+    """
+    dist = {}
+    for ss in session_list:
+        for s in ss.transactions:
+            rsp = s.rsp_json()
+            flag = custom_flag_func(rsp)
+            dist[flag] = dist.get(flag, 0) + 1
+    return _dist_dict_to_list(dist, format_ratio)
+
+
+def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+    dist = {}
+    for s in session_list:
+        flag = custom_flag_func(s)
+        dist[flag] = dist.get(flag, 0) + 1
+    return _dist_dict_to_list(dist, format_ratio)
 
 
 def func_to_case(name: str, func) -> TestCase:
