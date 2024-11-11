@@ -23,6 +23,7 @@ class HttpTransaction:
     request: Optional[str]  # 存储请求数据（序列化后的字符串）
     response: Optional[str]  # 存储响应数据（序列化后的字符串）
     request_time: Optional[datetime] = datetime.now()  # 存储请求时间
+    cost_time: Optional[float] = None
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2)

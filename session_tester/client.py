@@ -58,12 +58,15 @@ class Client:
                     r_ = self.http_session.post(req.url, data=req.req_data, headers=req.headers, timeout=req.timeout)
                 else:
                     raise RuntimeError(f"unsupported http method: {req.http_method}")
-                return r_
+                end_time = datetime.datetime.now()  # 记录结束时间
+                elapsed_time = (end_time - http_trans.request_time).total_seconds()  # 计算请求时间
+                return r_, elapsed_time
 
             r = None
+            cost = 0
             for _ in range(req.retry + 1):
                 try:
-                    r = send_request()
+                    r, cost = send_request()
                     if r.status_code == 200:
                         break
                 except:
@@ -74,6 +77,7 @@ class Client:
                 break
             http_trans.status_code = r.status_code
             http_trans.response = r.text
+            http_trans.cost_time = cost
             self.session.append_transaction(http_trans)
             if r.status_code != 200:
                 logger.error(f"failed to send request: {req}, status_cod: {r.status_code}, rsp: {r.text}")
