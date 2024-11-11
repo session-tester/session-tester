@@ -3,6 +3,8 @@ import inspect
 import sys
 from typing import List, Callable
 
+import numpy as np
+
 from .session import Session, HttpTransaction
 from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase, TestCase
 
@@ -48,6 +50,34 @@ def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callab
         flag = custom_flag_func(s)
         dist[flag] = dist.get(flag, 0) + 1
     return _dist_dict_to_list(dist, format_ratio)
+
+
+def stat_http_transaction_cost(session_list: List[Session], custom_stat_func: Callable):
+    """统计请求耗时，按照平均值，中位值，P90，P99进行统计"""
+    request_times = []
+    for s in session_list:
+        for t in s.transactions:
+            cost = custom_stat_func(t)
+            request_times.append(cost)
+
+    # 计算平均值
+    mean_time = np.mean(request_times)
+
+    # 计算中位值
+    median_time = np.median(request_times)
+
+    # 计算 P90
+    p90_time = np.percentile(request_times, 90)
+
+    # 计算 P99
+    p99_time = np.percentile(request_times, 99)
+
+    report = f"Average time: {mean_time:.2f} seconds\n"
+    report += f"Median time: {median_time:.2f} seconds\n"
+    report += f"P90 time: {p90_time:.2f} seconds\n"
+    report += f"P99 time: {p99_time:.2f} seconds\n"
+
+    return (mean_time, median_time, p90_time, p99_time), report
 
 
 def func_to_case(name: str, func) -> TestCase:
