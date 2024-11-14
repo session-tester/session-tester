@@ -27,22 +27,41 @@ class TestSuite:
 
     @classmethod
     def auto_gen_test_cases(cls) -> List[TestCase]:
+        methods = [func for func in dir(cls) if callable(getattr(cls, func))]
+        check_cases = []
+
         source = inspect.getsource(cls)
         tree = ast.parse(source)
         if len(tree.body) != 1 or not isinstance(tree.body[0], ast.ClassDef):
             raise ValueError("Only one class is allowed in the suite")
         tree = tree.body[0]
 
-        check_cases = []
+        inserted_method = set()
 
+        # 有序的检查
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name.startswith(default_session_checker_prefix()):
                 func = getattr(cls, node.name)
                 if isinstance(func, ast.FunctionDef):
                     func = getattr(cls, func.name)
                 if isinstance(cls.__dict__.get(func.__name__), staticmethod):
+                    inserted_method.add(node.name)
                     case = func_to_case(node.name, func)
                     check_cases.append(case)
+
+        # 处理修饰器的检查
+        for method_name in methods:
+            method = getattr(cls, method_name)
+            # print(f"Method: {method}")
+            if inspect.isfunction(method) or inspect.ismethod(method):
+                if isinstance(cls.__dict__.get(method_name), staticmethod) and method_name.startswith(
+                        default_session_checker_prefix()):
+                    if method_name in inserted_method:
+                        continue
+                    func = cls.__dict__.get(method_name)
+                    case = func_to_case(method_name, func)
+                    check_cases.append(case)
+                    sig = inspect.signature(method)
 
         return check_cases
 

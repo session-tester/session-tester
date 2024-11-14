@@ -2,7 +2,8 @@ import uuid
 from typing import List
 
 from demo.demo_svr import calc_sig
-from session_tester import Session, UserInfo, Tester, TestSuite, CheckResult, HttpTransaction, SessionMaintainerBase
+from session_tester import Session, UserInfo, Tester, TestSuite, CheckResult, HttpTransaction, SessionMaintainerBase, \
+    ts_with_http_cost_stat
 
 
 class SessionMaintainer(SessionMaintainerBase):
@@ -35,6 +36,7 @@ class SessionMaintainer(SessionMaintainerBase):
         s.ext_state["round"] = o["next_round"]
 
 
+@ts_with_http_cost_stat
 class T(TestSuite):
     """测试模块"""
 
@@ -104,8 +106,8 @@ def main():
 
     # 2. 运行测试用例产生报告
     t.run(
-        only_check=True,  # 只检查，不发送请求
-        # clear_session=True
+        # only_check=True,  # 只检查，不发送请求
+        clear_session=True
     )
 
 

@@ -326,6 +326,14 @@ t.run(
 - ``sm_no_update`` 无需更新状态
 - ``sm_no_init`` 无初始状态更新
 
+### TestSuite 的辅助修饰器
+
+有几个 `ts_` 开头的修饰器，用于简化 `TestSuite` 的实现。
+
+- ``ts_with_http_cost_stat`` 记录 HTTP 请求耗时，自动产生额外一张统计表
+
+![ts_with_http_cost_stat.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs/ts_with_http_cost_stat.png)
+
 # FAQ
 
 ## 为什么要将load_user_info和 session的维护分开？

@@ -79,6 +79,13 @@ def stat_http_transaction_cost(session_list: List[Session]):
     report += f"P90 time: {p90_time:.2f} seconds\n"
     report += f"P99 time: {p99_time:.2f} seconds\n"
 
+    report = [
+        {"耗时类型": "平均值", "耗时": f"{int(mean_time * 100)}ms"},
+        {"耗时类型": "P50", "耗时": f"{int(mean_time * 100)}ms"},
+        {"耗时类型": "P90", "耗时": f"{int(p90_time * 100)}ms"},
+        {"耗时类型": "P99", "耗时": f"{int(p99_time * 100)}ms"},
+    ]
+
     return (mean_time, median_time, p90_time, p99_time), report
 
 
