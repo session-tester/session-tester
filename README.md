@@ -334,6 +334,14 @@ t.run(
 
 ![ts_with_http_cost_stat.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs/ts_with_http_cost_stat.png)
 
+### 概率分布辅助函数
+
+- `session_elem_dist_stat` 统计 Session 级别的元素分布，只需要传入从session提取元素的函数
+- `transaction_elem_dist_stat` 统计 HttpTransaction 级别的元素分布，只需要传入从 HttpTransaction 提取元素的函数
+
+TODO: 支持多级标签分布
+
+
 # FAQ
 
 ## 为什么要将load_user_info和 session的维护分开？
