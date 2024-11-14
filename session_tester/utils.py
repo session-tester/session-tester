@@ -33,7 +33,7 @@ def _dist_dict_to_list(dist: dict, format_ratio=True):
 
 
 def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
-    """实验分布校验: 各个实验均有覆盖
+    """HTTP transaction级别元素分布统计
     """
     dist = {}
     for ss in session_list:
@@ -45,6 +45,8 @@ def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Ca
 
 
 def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+    """session级别元素分布统计
+    """
     dist = {}
     for s in session_list:
         flag = custom_flag_func(s)

@@ -13,6 +13,16 @@ from .user_info import UserInfo
 test_session_dir = os.getenv("TEST_SESSION_DIR", "./test_sessions")
 if not os.path.exists(test_session_dir):
     os.makedirs(test_session_dir)
+sub_session_dir_exists = False
+
+
+def update_test_session_dir(name: str):
+    global test_session_dir, sub_session_dir_exists
+    test_session_dir = os.path.join(test_session_dir, name)
+    if not os.path.exists(test_session_dir):
+        os.makedirs(test_session_dir)
+
+    sub_session_dir_exists = True
 
 
 @dataclass
@@ -114,6 +124,12 @@ class Session(IDGenerator):
 
     @staticmethod
     def clear_sessions(label: str):
+        if sub_session_dir_exists:
+            # remote all files in test_session_dir but not remove the dir
+            for root, dirs, files in os.walk(test_session_dir, topdown=False):
+                for name in files:
+                    os.remove(os.path.join(root, name))
+            return
         id_file = os.path.join(test_session_dir, f"{label}")
         session_filename_list = glob.glob(id_file + "-*.json")
         files = session_filename_list + [id_file]

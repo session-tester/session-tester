@@ -29,11 +29,8 @@ class TestCase:
                 # 获取异常堆栈信息
                 stack_trace = traceback.format_exc()
                 check_result = CheckResult(False, f"checking exception: {e}\nStack trace:\n{stack_trace}", None)
-                print(f"checking exception: {e}\nStack trace:\n{stack_trace}")
-                exit()
 
-            if check_result is not None:
-                ret.append(check_result)
+            ret.append(check_result)
         return ret
 
 
@@ -124,14 +121,17 @@ class Report:
 
         self.ext_report = []
         for case_result in self.case_results:
-            if case_result.report_lines is not None:
+            if case_result is not None and case_result.report_lines is not None:
                 self.ext_report += case_result.report_lines
 
         for case_result in self.case_results:
-            if not case_result.result:
+            if case_result is not None and not case_result.result:
                 self.result = "未通过"
                 self.bad_case = case_result.exception
                 return
+
+        if self.uncover_case_count > 0 and self.passed_case_count == 0:
+            self.result = "未覆盖"
 
     def __str__(self):
         self.summary()

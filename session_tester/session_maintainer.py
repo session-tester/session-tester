@@ -64,8 +64,21 @@ def sm_no_init(cls):
     return NewClass
 
 
-@sm_no_init
-@sm_no_update
-@sm_n_rounds(1)
+def sm_simple_n(n: int):
+    def decorator(cls):
+        @sm_no_init
+        @sm_no_update
+        @sm_n_rounds(n)
+        class NewClass(cls):
+            @staticmethod
+            def should_stop_session(s: Session) -> bool:
+                return len(s.transactions) >= n
+
+        return NewClass
+
+    return decorator
+
+
+@sm_simple_n(1)
 class SessionMaintainerSimple(SessionMaintainerBase):
     pass

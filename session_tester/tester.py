@@ -6,6 +6,7 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.styles import Alignment, Font
 
 from .logger import logger
+from .session import update_test_session_dir
 from .test_suite import TestSuite
 from .testcase import Report
 
@@ -29,6 +30,7 @@ class Tester:
             names = [tc.name for tc in test_suite.auto_gen_test_cases()]
             if len(names) != len(set(names)):
                 raise ValueError(f"Duplicate test case names in suite {test_suite.name}")
+        update_test_session_dir(self.name)
 
     def run(self, only_check=False, clear_session=False, thread_cnt=50):
         if clear_session and only_check:
