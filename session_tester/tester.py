@@ -27,7 +27,7 @@ class Tester:
             raise ValueError("Duplicate test suite names")
 
         for test_suite in test_suites:
-            names = [tc.name for tc in test_suite.auto_gen_test_cases()]
+            names = [tc.name for tc in test_suite.check_cases()]
             if len(names) != len(set(names)):
                 raise ValueError(f"Duplicate test case names in suite {test_suite.name}")
         update_test_session_dir(self.name)

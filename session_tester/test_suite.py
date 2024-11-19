@@ -5,7 +5,9 @@ import threading
 import time
 from typing import List
 
-from . import Session, Client
+from .client import Client
+from .logger import logger
+from .session import Session
 from .session_maintainer import SessionMaintainerBase
 from .testcase import TestCase, SingleRequestCase, Report, SingleSessionCase, AllSessionCase
 from .utils import func_to_case, default_session_checker_prefix
@@ -24,9 +26,14 @@ class TestSuite:
         self.session_maintainer: SessionMaintainerBase = session_maintainer
         self.session_cnt_to_check = session_cnt_to_check
         self.report_list: List[Report] = []
+        self.parent_name = None
+        self._check_cases = self.auto_gen_test_cases()
+
+    def check_cases(self):
+        return self._check_cases
 
     @classmethod
-    def auto_gen_test_cases(cls) -> List[TestCase]:
+    def auto_gen_test_cases(cls, inserted_check_func=set()) -> List[TestCase]:
         methods = [func for func in dir(cls) if callable(getattr(cls, func))]
         check_cases = []
 
@@ -36,17 +43,16 @@ class TestSuite:
             raise ValueError("Only one class is allowed in the suite")
         tree = tree.body[0]
 
-        inserted_method = set()
-
         # 有序的检查
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name.startswith(default_session_checker_prefix()):
                 func = getattr(cls, node.name)
                 if isinstance(func, ast.FunctionDef):
                     func = getattr(cls, func.name)
-                if isinstance(cls.__dict__.get(func.__name__), staticmethod):
-                    inserted_method.add(node.name)
-                    case = func_to_case(node.name, func)
+                func_name = node.name
+                if isinstance(cls.__dict__.get(func.__name__), staticmethod) and func_name not in inserted_check_func:
+                    inserted_check_func.add(func_name)
+                    case = func_to_case(func_name, func)
                     check_cases.append(case)
 
         # 处理修饰器的检查
@@ -56,12 +62,22 @@ class TestSuite:
             if inspect.isfunction(method) or inspect.ismethod(method):
                 if isinstance(cls.__dict__.get(method_name), staticmethod) and method_name.startswith(
                         default_session_checker_prefix()):
-                    if method_name in inserted_method:
+                    if method_name in inserted_check_func:
                         continue
+
+                    inserted_check_func.add(method_name)
                     func = cls.__dict__.get(method_name)
                     case = func_to_case(method_name, func)
                     check_cases.append(case)
                     sig = inspect.signature(method)
+        # 处理父类中的函数
+        for base in inspect.getmro(cls):
+            if base == cls:
+                continue
+            try:
+                check_cases += base.auto_gen_test_cases(inserted_check_func)
+            except AttributeError:
+                pass
 
         return check_cases
 
@@ -142,7 +158,7 @@ class TestSuite:
                 f"No enough sessions data found. expect[{self.session_cnt_to_check}], got[{len(session_list)}]")
 
         self.report_list = []
-        for case in self.auto_gen_test_cases():
+        for case in self.check_cases():
             if isinstance(case, SingleRequestCase):
                 report = Report(case.name, case.expectation, "SingleRequestCase")
                 transactions = [transaction for session in session_list for transaction in session.transactions]
@@ -174,5 +190,6 @@ class TestSuite:
                     report.not_passed_case_count += 1
 
             self.report_list.append(report)
+            logger.info(f"{self.name}-{case.name} 检查完成")
 
         return self.report_list
