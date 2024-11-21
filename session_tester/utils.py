@@ -74,11 +74,6 @@ def stat_http_transaction_cost(session_list: List[Session]):
     # 计算 P99
     p99_time = np.percentile(request_times, 99)
 
-    report = f"Average time: {mean_time:.2f} seconds\n"
-    report += f"Median time: {median_time:.2f} seconds\n"
-    report += f"P90 time: {p90_time:.2f} seconds\n"
-    report += f"P99 time: {p99_time:.2f} seconds\n"
-
     report = [
         {"耗时类型": "平均值", "耗时": f"{int(mean_time * 100)}ms"},
         {"耗时类型": "P50", "耗时": f"{int(mean_time * 100)}ms"},

@@ -1,8 +1,10 @@
 import ast
+import datetime
 import inspect
 import queue
 import threading
 import time
+from dataclasses import dataclass
 from typing import List
 
 from .client import Client
@@ -14,8 +16,7 @@ from .utils import func_to_case, default_session_checker_prefix
 
 
 class TestSuite:
-    def __init__(self, name=None, session_maintainer: SessionMaintainerBase = None, session_cnt_to_check=0,
-                 spec_cases=None):
+    def __init__(self, name=None, session_maintainer: SessionMaintainerBase = None, spec_cases=None):
         self.name = name
         if name is None:
             self.name = self.__doc__
@@ -25,7 +26,6 @@ class TestSuite:
         self.name = self.name.strip()
 
         self.session_maintainer: SessionMaintainerBase = session_maintainer
-        self.session_cnt_to_check = session_cnt_to_check
         self.report_list: List[Report] = []
         self.parent_name = None
         self._check_cases = self.merge_cases(spec_cases)
@@ -91,10 +91,10 @@ class TestSuite:
                     func = cls.__dict__.get(method_name)
                     case = func_to_case(method_name, func)
                     check_cases.append(case)
-                    sig = inspect.signature(method)
+                    # sig = inspect.signature(method)
         # 处理父类中的函数
         for base in inspect.getmro(cls):
-            if base == cls:
+            if base == cls or not isinstance(base, TestSuite):
                 continue
             try:
                 check_cases += base.auto_gen_test_cases(inserted_check_func)
@@ -103,11 +103,35 @@ class TestSuite:
 
         return check_cases
 
-    def do_send(self, thread_cnt=50):
+    def do_send(self, thread_cnt=50, no_dump=False):
         stopped = threading.Event()
         stopped.clear()
-        user_cnt = 0
         lock = threading.Lock()
+
+        logger.info(f"{self.name} 开始发送")
+
+        @dataclass
+        class SendStat:
+            total_session_cnt: int = 0
+            total_session_cost: int = 0
+            total_send_cnt: int = 0
+            total_send_err_cnt: int = 0
+            total_retry_cnt: int = 0
+            total_send_cost: int = 0
+            start_time: datetime.datetime = 0
+            end_time: datetime.datetime = 0
+
+            def report(self):
+                logger.info("发送请求统计：")
+                logger.info(f"    {self.total_session_cnt} 个会话")
+                logger.info(
+                    f"    {self.total_send_cnt} 个请求(失败重试 {self.total_retry_cnt}, 最终失败 {self.total_send_err_cnt})")
+                logger.info(f"    总耗时: {(self.end_time - self.start_time).total_seconds()} 秒")
+                logger.info(f"    请求平均耗时: {self.total_send_cost * 1000 / self.total_send_cnt} 毫秒")
+                logger.info(f"    会话平均耗时: {self.total_session_cost * 1000 / self.total_session_cnt} 毫秒")
+                logger.info(f"    QPS: {self.total_send_cnt / (self.end_time - self.start_time).total_seconds()}")
+
+        send_stat = SendStat()
 
         class SendWorker(threading.Thread):
             def __init__(self, label, session_maintainer_cls: SessionMaintainerBase):
@@ -117,17 +141,26 @@ class TestSuite:
                 self.session_maintainer_cls = session_maintainer_cls
 
             def run(self):
-                nonlocal user_cnt
                 while True:
                     try:
                         user_info = self.user_info_queue.get_nowait()
                         session = Session(label=self.label)
-                        session.create(user_info=user_info, transactions=[])
+                        session.create(user_info=user_info, transactions=[], no_dump=no_dump)
                         client = Client(session=session, session_maintainer=self.session_maintainer_cls)
+
+                        start_time = datetime.datetime.now()
                         client.run()
+                        elapsed_time = (datetime.datetime.now() - start_time).total_seconds()  # 计算请求时间
                         session.dump()
                         with lock:
-                            user_cnt += 1
+                            nonlocal send_stat
+                            send_stat.total_session_cnt += 1
+                            send_stat.total_send_cnt += len(session.transactions)
+                            send_stat.total_send_err_cnt += len(
+                                [x for x in session.transactions if not x.finished_without_error()])
+                            send_stat.total_retry_cnt += sum([x.retry_cnt for x in session.transactions])
+                            send_stat.total_send_cost += sum([x.cost_time for x in session.transactions])
+                            send_stat.total_session_cost += elapsed_time
                     except queue.Empty:
                         if stopped.is_set():
                             return
@@ -157,28 +190,21 @@ class TestSuite:
             t = SendWorker(self.name, self.session_maintainer)
             t_list.append(t)
 
+        send_stat.start_time = datetime.datetime.now()
         for t in t_list:
             t.start()
 
         for t in t_list:
             t.join()
-
-        if self.session_cnt_to_check == 0:
-            self.session_cnt_to_check = user_cnt
+        send_stat.end_time = datetime.datetime.now()
+        return send_stat
 
     def clear_sessions(self):
         Session.clear_sessions(self.name)
 
     def check(self):
         # 加载会话结果
-        if self.session_cnt_to_check == 0:
-            self.session_maintainer.load_user_info()
-            self.session_cnt_to_check = self.session_maintainer.user_info_queue.qsize()
-        session_list = Session.load_sessions(self.name, n=self.session_cnt_to_check)
-        if len(session_list) < self.session_cnt_to_check:
-            raise ValueError(
-                f"No enough sessions data found. expect[{self.session_cnt_to_check}], got[{len(session_list)}]")
-
+        session_list = Session.load_sessions(self.name)
         self.report_list = []
         for case in self.check_cases():
             if isinstance(case, SingleRequestCase):

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "session_tester"
-version = "0.1.0.dev13"
+version = "0.1.0.dev14"
 description = "Session Tester Python package"
 authors = [
     { name="Pan Zhongxian", email="panzhongxian0532@gmail.com" }

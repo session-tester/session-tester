@@ -106,8 +106,7 @@ def main():
 
     # 2. 运行测试用例产生报告
     t.run(
-        # only_check=True,  # 只检查，不发送请求
-        clear_session=True
+        mode=Tester.RUN_MODE_NEW,
     )
 
 

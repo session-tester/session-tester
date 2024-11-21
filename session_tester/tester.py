@@ -16,6 +16,10 @@ if not os.path.exists(test_report_dir):
 
 
 class Tester:
+    RUN_MODE_NEW = 0
+    RUN_MODE_CHECK = 1
+    RUN_MODE_BENCHMARK = 2
+
     def __init__(self,
                  name: str,
                  test_suites: List[TestSuite]):
@@ -32,30 +36,36 @@ class Tester:
                 raise ValueError(f"Duplicate test case names in suite {test_suite.name}")
         update_test_session_dir(self.name)
 
-    def run(self, only_check=False, clear_session=False, thread_cnt=50):
-        if clear_session and only_check:
-            raise ValueError("clear_session and only_check cannot be True at the same time")
+    def run(self, mode=RUN_MODE_NEW, thread_cnt=50):
+        if mode not in [self.RUN_MODE_NEW, self.RUN_MODE_CHECK, self.RUN_MODE_BENCHMARK]:
+            raise ValueError(f"Invalid tester run mode: {mode}")
 
-        if clear_session:
+        if mode == Tester.RUN_MODE_NEW:
             for test_suite in self.test_suites:
                 test_suite.clear_sessions()
             logger.info("清除会话数据成功")
-
-        if not only_check:
             for test_suite in self.test_suites:
                 test_suite.do_send(thread_cnt=thread_cnt)
             logger.info("发送请求完成")
+        elif mode == Tester.RUN_MODE_BENCHMARK:
+            logger.info("启动压力测试")
+            for test_suite in self.test_suites:
+                result = test_suite.do_send(thread_cnt=thread_cnt, no_dump=True)
+                result.report()
+            logger.info("压测请求完成")
 
-        for test_suite in self.test_suites:
-            test_suite.check()
-            logger.info(f"{test_suite.name}校验完成")
+        # 只有新模式和校验模式下才会执行校验
+        if mode in [Tester.RUN_MODE_NEW, Tester.RUN_MODE_CHECK]:
+            for test_suite in self.test_suites:
+                test_suite.check()
+                logger.info(f"{test_suite.name}校验完成")
 
-        # 保存为Excel文件
-        output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
-        with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
-            self.gen_summary(writer)
-            self.gen_detail_report(writer)
-        self.format()
+            # 保存为Excel文件
+            output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
+            with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+                self.gen_summary(writer)
+                self.gen_detail_report(writer)
+            self.format()
 
     def gen_summary(self, writer):
         # 解析数据

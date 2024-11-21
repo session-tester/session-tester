@@ -21,6 +21,7 @@ class UserInfo:
 
 
 class UserInfoGenerator:
+    """ 用户信息生成器 """
     def __init__(self, field_list: list[str]):
         self.field_list = field_list
 

@@ -1,5 +1,6 @@
 import glob
 import json
+import math
 import os
 import threading
 from dataclasses import asdict
@@ -33,7 +34,8 @@ class HttpTransaction:
     request: Optional[str]  # 存储请求数据（序列化后的字符串）
     response: Optional[str]  # 存储响应数据（序列化后的字符串）
     request_time: Optional[datetime] = datetime.now()  # 存储请求时间
-    cost_time: Optional[float] = None
+    cost_time: Optional[float] = 0.0
+    retry_cnt: Optional[int] = 0
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
@@ -110,6 +112,7 @@ class Session(IDGenerator):
         self.transactions: List[HttpTransaction] = []
         self.start_time = None
         self.session_filename = None
+        self.no_dump = False
         self.ext_state = {}
         if create_flag:
             self.session_id = Session.get_next_id(label)
@@ -126,7 +129,7 @@ class Session(IDGenerator):
     def clear_sessions(label: str):
         if sub_session_dir_exists:
             # remote all files in test_session_dir but not remove the dir
-            for root, dirs, files in os.walk(test_session_dir, topdown=False):
+            for root, _, files in os.walk(test_session_dir, topdown=False):
                 for name in files:
                     os.remove(os.path.join(root, name))
             return
@@ -140,11 +143,12 @@ class Session(IDGenerator):
                 logger.error("Failed to remove session {%s}: {%s}", filename, e)
 
     @staticmethod
-    def load_sessions(label: str, n: int = 100) -> List['Session']:
+    def load_sessions(label: str, n: int = math.inf) -> List['Session']:
         sessions = []
         id_ = Session.get_curr_id(label)
         while id_ > 0 and len(sessions) < n:
             session_filename = f"{label}-{id_:08d}.json"
+            # TODO 数据量过大时，可以考虑分批加载和校验
             try:
                 s = Session.load_session(os.path.join(test_session_dir, session_filename))
                 sessions.append(s)
@@ -154,14 +158,17 @@ class Session(IDGenerator):
         return sessions
 
     def create(self, user_info: UserInfo, transactions: List[HttpTransaction],
-               start_time: Optional[float] = None) -> 'Session':
+               start_time: Optional[float] = None,
+               no_dump: bool = False) -> 'Session':
         self.user_info = user_info
         self.transactions = transactions
         self.start_time = start_time
         # 创建一个session文件
         self.session_filename = f"{self.label}-{self.session_id:08d}.json"
         self.ext_state = {}
-        self.dump()
+        self.no_dump = no_dump
+        if not no_dump:
+            self.dump()
         return self
 
     def append_transaction(self, transaction: HttpTransaction):
@@ -179,6 +186,8 @@ class Session(IDGenerator):
 
     def dump(self):
         if self.session_filename:
+            if self.no_dump:
+                return
             full_session_filename = os.path.join(test_session_dir, self.session_filename)
             with open(full_session_filename, 'w') as file:
                 file.write(self.to_json())

@@ -71,16 +71,19 @@ class Client:
                         break
                 except:
                     time.sleep(0.5)
+                http_trans.retry_cnt += 1
 
             if r is None:
-                logger.error(f"failed to send request: {req}")
+                self.session.append_transaction(http_trans)
+                logger.error(f"break session, failed to send request: {req}")
                 break
             http_trans.status_code = r.status_code
             http_trans.response = r.text
             http_trans.cost_time = cost
             self.session.append_transaction(http_trans)
             if r.status_code != 200:
-                logger.error(f"failed to send request: {req}, status_cod: {r.status_code}, rsp: {r.text}")
+                logger.error("break session, "
+                             f"failed to send request: {req}, status_cod: {r.status_code}, rsp: {r.text}")
                 break
 
             if self.session_maintainer.update_session is not None:
