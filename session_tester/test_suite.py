@@ -14,7 +14,8 @@ from .utils import func_to_case, default_session_checker_prefix
 
 
 class TestSuite:
-    def __init__(self, name=None, session_maintainer: SessionMaintainerBase = None, session_cnt_to_check=0):
+    def __init__(self, name=None, session_maintainer: SessionMaintainerBase = None, session_cnt_to_check=0,
+                 spec_cases=None):
         self.name = name
         if name is None:
             self.name = self.__doc__
@@ -27,13 +28,34 @@ class TestSuite:
         self.session_cnt_to_check = session_cnt_to_check
         self.report_list: List[Report] = []
         self.parent_name = None
-        self._check_cases = self.auto_gen_test_cases()
+        self._check_cases = self.merge_cases(spec_cases)
+
+    def merge_cases(self, spec_cases):
+        if spec_cases is None:
+            spec_cases = []
+
+        ret = []
+        inserted_cases = set()
+        for case in spec_cases:
+            if case.name in inserted_cases:
+                raise ValueError(f"Duplicate case name: {case.name}")
+            inserted_cases.add(case.name)
+            ret.append(case)
+
+        for case in self.auto_gen_test_cases():
+            if case.name in inserted_cases:
+                raise ValueError(f"Duplicate case name: {case.name}, please change the name in chk func")
+            inserted_cases.add(case.name)
+            ret.append(case)
+        return ret
 
     def check_cases(self):
         return self._check_cases
 
     @classmethod
-    def auto_gen_test_cases(cls, inserted_check_func=set()) -> List[TestCase]:
+    def auto_gen_test_cases(cls, inserted_check_func=None) -> List[TestCase]:
+        if inserted_check_func is None:
+            inserted_check_func = set()
         methods = [func for func in dir(cls) if callable(getattr(cls, func))]
         check_cases = []
 

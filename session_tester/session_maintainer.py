@@ -32,4 +32,3 @@ class SessionMaintainerBase:
     @staticmethod
     def should_stop_session(_: Session) -> bool:
         raise NotImplementedError
-

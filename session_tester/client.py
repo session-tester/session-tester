@@ -45,7 +45,7 @@ class Client:
                 req.http_method = self.session_maintainer.http_method
             if req.headers is None:
                 req.headers = {}
-            if isinstance(req.req_data, dict) or isinstance(req.req_data, list):
+            if isinstance(req.req_data, (dict, list)):
                 req.req_data = json.JSONEncoder().encode(req.req_data)
                 req.headers["Content-Type"] = "application/json"
 

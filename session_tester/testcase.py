@@ -17,7 +17,7 @@ class TestCase:
         self.name = name
         self.expectation = expectation
 
-    def check(self, _: Any):
+    def check(self, _: Any) -> CheckResult:
         raise NotImplementedError
 
     def batch_check(self, arg_list: List[Any]) -> List[CheckResult]:
@@ -61,13 +61,13 @@ def overwrite_name_and_expectation(name, expectation, doc):
 class SingleRequestCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
                  rsp_checker: Callable[[HttpTransaction], CheckResult] = None):
-        if rsp_checker is None:
-            raise RuntimeError("rsp_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, rsp_checker.__doc__)
         super().__init__(name, expectation)
         self.rsp_checker = rsp_checker
 
-    def check(self, transaction: HttpTransaction):
+    def check(self, transaction: HttpTransaction) -> CheckResult:
+        if self.rsp_checker is None:
+            raise RuntimeError("rsp_checker is required")
         return self.rsp_checker(transaction)
 
 
@@ -75,13 +75,13 @@ class SingleRequestCase(TestCase):
 class SingleSessionCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
                  session_checker: Callable[[Session], CheckResult] = None):
-        if session_checker is None:
-            raise RuntimeError("session_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, session_checker.__doc__)
         super().__init__(name, expectation)
         self.session_checker = session_checker
 
     def check(self, session: Session):
+        if self.session_checker is None:
+            raise RuntimeError("session_checker is required")
         return self.session_checker(session)
 
 
@@ -89,13 +89,13 @@ class SingleSessionCase(TestCase):
 class AllSessionCase(TestCase):
     def __init__(self, name: str = None, expectation: str = None,
                  session_list_checker: Callable[[List[Session]], CheckResult] = None):
-        if session_list_checker is None:
-            raise RuntimeError("session_list_checker is required")
         name, expectation = overwrite_name_and_expectation(name, expectation, session_list_checker.__doc__)
         super().__init__(name, expectation)
         self.session_list_checker = session_list_checker
 
     def check(self, session_list: List[Session]):
+        if self.session_list_checker is None:
+            raise RuntimeError("session_list_checker is required")
         return self.session_list_checker(session_list)
 
 
