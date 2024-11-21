@@ -69,39 +69,39 @@ class HttpTransaction:
 class IDGenerator:
     _id = None
     _lock = threading.Lock()  # 使用线程锁来保护类变量
+    id_dict = {}
 
     @classmethod
     def _read_initial_id(cls, file_path):
+        k = file_path
         file_path = os.path.join(test_session_dir, file_path)
-        if os.path.exists(file_path):
+        try:
             with open(file_path, 'r') as file:
-                try:
-                    cls._id = int(file.read().strip())
-                except ValueError:
-                    cls._id = 0
-        else:
-            cls._id = 0
+                cls.id_dict[k] = int(file.read().strip())
+        except:
+            cls.id_dict[k] = 0
 
     @classmethod
     def _write_id_to_file(cls, file_path: str):
+        k = file_path
         file_path = os.path.join(test_session_dir, file_path)
         with open(file_path, 'w') as file:
-            file.write(str(cls._id))
+            file.write(str(cls.id_dict[k]))
 
     @classmethod
     def get_next_id(cls, file_path: str) -> int:
         with cls._lock:  # 使用线程锁来保护临界区
-            if cls._id is None:
+            if cls.id_dict.get(file_path, None) is None:
                 cls._read_initial_id(file_path)
-            cls._id += 1
+            cls.id_dict[file_path] += 1
             cls._write_id_to_file(file_path)
-            return cls._id
+            return cls.id_dict[file_path]
 
     @classmethod
     def get_curr_id(cls, file_path: str) -> int:
         with cls._lock:  # 使用线程锁来保护临界区
             cls._read_initial_id(file_path)
-            return cls._id
+            return cls.id_dict[file_path]
 
 
 class Session(IDGenerator):
