@@ -9,6 +9,13 @@
 
 测试过程、预期检查、报告都体现在代码上，**Test as Code**。
 
+- 会话状态维护，支持编排多轮不同服务、不同内容的请求
+- 修饰器、类、静态函数三种方式，灵活添加测试用例。方便累积、复用测试用例
+- 清空会话、仅校验、压测三种模式，可避免测试用例不全而重复发送请求的低效
+- 单请求级、单会话级、全会话级三种级别用例测试，覆盖绝大部分测试场景
+- 提供常用工具函数，统计标签分布、HTTP请求耗时等，让测试代码更简洁
+- 自动生成的报告，出汇总表格外，支持每个测试用例可选输出一个详细列表
+
 ## 一、简介
 
 考虑推荐、抽奖等服务场景，每个用户会进行多轮请求，每轮请求的结果又依赖于之前的轮次。
@@ -16,8 +23,9 @@
 
 本测试框架，针对以上类似场景，提供了一套解决方案:
 
-- 为每个玩家维护一个会话信息，允许用户自定义用户信息结构、自定义请求包、根据返回更新会话状态、自定义会话终止条件。
-- 自定义单请求返回、单会话、多会话的校验函数，用于逻辑正确与否的同时，还可以输出详细的报告，比如返回道具的分布概率等。
+- 为每个玩家维护一个会话信息，允许用户自定义用户信息结构、自定义请求包、根据返回更新会话状态、自定义会话终止条件
+- 如果会话维持或用户分类不同，可以通过多个TestSuite使用不同的会话维持器，进行不同的测试
+- 自定义单请求返回、单会话、多会话的校验函数，用于逻辑正确与否的同时，还可以输出详细的报告，比如返回道具的分布概率等
 
 直接使用 pip 安装：
 
@@ -32,22 +40,14 @@ import session_tester
 ```
 
 以下是 [demo/session_test_demo.py](demo/session_test_demo.py) 的一个示例。
-四个测试用例包含了三类校验，并且最后一个测试用例产出了额外的详细数据：
+
+2个测试模块逻辑相同，每个包含4个测试用例（含三类校验），并且最后一个测试用例产出额外的详细数据，通过修饰器打开了耗时分布统计：
 
 ![test_report_cn](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Ftest_report_cn.png)
 
-除此之外，框架还有其他一些特点：
+亦可选择使用压测模式，不记录用户会话数据和校验，直接发送请求，统计返回信息：
 
-- 高性能收发数据
-- 解耦请求发送接收和数据验证，一次发送多次验证
-- 将测试用例与函数相结合，通过函数注释生成测试报告，报告中的排序以代码定义先后顺序为准
-- 自动捕获`chk_`开头的测试函数，无需注册
-- 单个测试用例可以产出额外的测试报告
-- 多语言支持
-- 多模块支持
-
-本框架设计专注于测试**单个有状态服务**的特殊场景，所测试的服务只有单个HTTP URL。
-大而全的测试框架固然覆盖面广，但是使用成本也更高。
+![benchmark_mode](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Fbenchmark_mode.png)
 
 ## 二、基本概念
 
@@ -96,7 +96,7 @@ TestCase 有三类，并对应不同的校验函数：
 **HttpTransaction** 是一个 HTTP 事务结构，用于存储 HTTP 请求和响应的相关信息，包括请求时间、请求、响应、状态码、耗时等，用于后续分析和验证。
 
 **Session** 是一个会话结构，用于存储单个用户的多次请求和响应，以及用户的一些状态。
-Session 是存储的单元，每个对应一个文件存放在 test_sessions 目录下。该目录可以通过 `TEST_SESSION_DIR` 环境变量配置。
+Session 是存储的单元，每个对应一个文件存放在 test_sessions 目录下的 Tester 级别单独目录。该目录可以通过 `TEST_SESSION_DIR` 环境变量配置。
 
 ### 2.4 SessionMaintainer
 
@@ -163,7 +163,7 @@ def load_user_info(self):
 **初始化会话函数 `init_session()` 用于每个会话的初始化，会在创建会话时被调用**。
 很多用户状态清理或初始化操作可以放到这里来做，比如用户 Redis 缓存的清理，而无需使用额外的工具。
 
-示例中初始化，创建列表维护用户获得的数字列表，创建一个 round 来维护轮次。
+示例中初始化，创建列表维护用户获得的数字列表，创建一个 `round` 来维护轮次。
 
 ```python
 @staticmethod
@@ -285,6 +285,21 @@ def chk_items_dist_in_all_sessions(ss: List[Session]) -> CheckResult:
 
 ![test_report_dist_detail](https://raw.githubusercontent.com/session-tester/session-tester/main/docs%2Ftest_report_dist_detail_cn.png)
 
+上述统计分布的测试需求比较常见，我们有的封装相应的函数，因此上边的代码可以简化为：
+
+```python
+def chk_items_dist_in_all_sessions(ss: List[Session]) -> CheckResult:
+  """
+  返回道具分布校验:
+  1. 所有请求返回结果中items字段分布均匀
+  """
+  stat_result = transaction_elem_dist_stat(ss, lambda x: x.get("items", []))
+  return CheckResult(True, "", stat_result)
+```
+
+
+可以在 utils 目录中查阅。
+
 ### 3.4 执行测试
 
 上述工作都准备好之后，就可以运行测试并校验结果了。
@@ -293,7 +308,7 @@ def chk_items_dist_in_all_sessions(ss: List[Session]) -> CheckResult:
 
 ```python
 t = Tester(
-    name=f"release_12345",
+    name=f"release_12345", ## 本次测试名称，用于创建会话文件夹和生成测试报告
     test_suites=[T(session_maintainer=SessionMaintainer())]
 )
 ```
@@ -302,9 +317,8 @@ t = Tester(
 
 ```python
 t.run(
-    # session_cnt_to_check=1000,  # 检查的数量，如果用户队列数据大于该数值，实际使用用户队列大小
-    # only_check=True,  # 只检查，不发送请求
-    clear_session=True
+  # mode=Tester.RUN_MODE_NEW,  #默认参数，历史会话数据会被清空
+  # thread_cnt=50 # 默认参数，线程数
 )
 ```
 
@@ -341,7 +355,6 @@ t.run(
 
 TODO: 支持多级标签分布
 
-
 # FAQ
 
 ## 为什么要将load_user_info和 session的维护分开？
@@ -354,10 +367,12 @@ TODO: 支持多级标签分布
 
 # TODO
 
-- 提供更多的加载用户数据的工具
-- 累积更多的校验函数
-- 自动生成测试用例
-- UserInfo使用通用结构替换
-- 流水线
-- 链接额外测试报告
-- 发布到 PiPy 仓库
+- [ ] 提供更多的加载用户数据的工具
+- [ ] 累积更多的校验函数
+- [x]  自动生成测试用例
+- [ ] UserInfo使用通用结构替换
+- [x] 流水线
+- [ ] 链接额外测试报告
+- [x] 发布到 PiPy 仓库
+- [ ] 补充多轮不同会话的 SessionMaintainer 示例
+

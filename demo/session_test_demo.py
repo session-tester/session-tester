@@ -84,6 +84,10 @@ class T(TestSuite):
         返回道具分布校验:
         1. 所有请求返回结果中items字段分布均匀
         """
+        # stat_result = transaction_elem_dist_stat(ss, lambda x: x.get("items", []))
+        # return CheckResult(True, "", stat_result)
+        # 以下代码可以通过上边两行代替
+
         item_dist = {}
         for s in ss:
             for t in s.transactions:
@@ -91,17 +95,18 @@ class T(TestSuite):
                 for item in items:
                     item_dist[item] = item_dist.get(item, 0) + 1
 
-        dist_detail = [{"item": k, "count": v} for k, v in sorted(item_dist.items())]
-
-        return CheckResult(True, "", dist_detail)
+        stat_result = [{"item": k, "count": v} for k, v in sorted(item_dist.items())]
+        return CheckResult(True, "", stat_result)
 
 
 def main():
     # 1. 创建测试对象
     t = Tester(
         name=f"release_12345",
-        test_suites=[T(session_maintainer=SessionMaintainer()),
-                     T(session_maintainer=SessionMaintainer(), name="test2")],
+        test_suites=[
+            T(session_maintainer=SessionMaintainer()),
+            T(session_maintainer=SessionMaintainer(), name="测试模块2"),
+        ],
     )
 
     # 2. 运行测试用例产生报告

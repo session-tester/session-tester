@@ -126,10 +126,10 @@ class TestSuite:
                 logger.info(f"    {self.total_session_cnt} 个会话")
                 logger.info(
                     f"    {self.total_send_cnt} 个请求(失败重试 {self.total_retry_cnt}, 最终失败 {self.total_send_err_cnt})")
-                logger.info(f"    总耗时: {(self.end_time - self.start_time).total_seconds()} 秒")
-                logger.info(f"    请求平均耗时: {self.total_send_cost * 1000 / self.total_send_cnt} 毫秒")
-                logger.info(f"    会话平均耗时: {self.total_session_cost * 1000 / self.total_session_cnt} 毫秒")
-                logger.info(f"    QPS: {self.total_send_cnt / (self.end_time - self.start_time).total_seconds()}")
+                logger.info(f"    总耗时: {((self.end_time - self.start_time).total_seconds()):.2f} 秒")
+                logger.info(f"    请求平均耗时: {(self.total_send_cost * 1000 / self.total_send_cnt):.2f} 毫秒")
+                logger.info(f"    会话平均耗时: {(self.total_session_cost * 1000 / self.total_session_cnt):.2f} 毫秒")
+                logger.info(f"    QPS: {(self.total_send_cnt / (self.end_time - self.start_time).total_seconds()):.2f}")
 
         send_stat = SendStat()
 
