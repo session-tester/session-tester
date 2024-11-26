@@ -30,12 +30,7 @@ class Client:
             self.session_maintainer.init_session(self.session)
 
         while True:
-            http_trans = HttpTransaction(
-                url=self.session_maintainer.url,
-                method=self.session_maintainer.http_method,
-                request=None, response=None, status_code=None,
-                request_time=None)
-
+            http_trans = HttpTransaction("", "", None, None, None)
             req = self.session_maintainer.wrap_req(self.session)
             if not isinstance(req, StReq):
                 req = StReq(req)
@@ -48,6 +43,9 @@ class Client:
             if isinstance(req.req_data, (dict, list)):
                 req.req_data = json.JSONEncoder().encode(req.req_data)
                 req.headers["Content-Type"] = "application/json"
+
+            http_trans.url = req.url
+            http_trans.method = req.http_method
 
             def send_request():
                 http_trans.request = req.req_data

@@ -126,7 +126,6 @@ SessionMaintainer 是一个会话维护器，其中有一个 `user_info_queue`�
 - Tester.RUN_MODE_CHECK: 使用历史会话数据，不发送请求，直接按照测试用例进行校验，生成报告
 - Tester.RUN_MODE_BENCHMARK: 按照会话维护器逻辑，只发送请求，统计错误和耗时，不记录会话具体内容
 
-
 ## 三、使用方法 - Demo
 
 项目中 [demo/session_test_demo.py](demo/session_test_demo.py) 中提供了一个比较详细的使用 Demo。
@@ -363,17 +362,19 @@ t.run(
 
 TODO: 支持多级标签分布
 
-# FAQ
+## FAQ
 
-## 为什么要将load_user_info和 session的维护分开？
+### 为什么不使用 HttpRunner 等现成服务
+
+### 为什么要将load_user_info和 session的维护分开？
 
 如果将用户信息的加载放在 init_session() 中看上去会简单一些，但是往往用户数据的加载是需要单独去批量拉取，放在init_session中会打乱这个加载过程。
 
-## 为什么 load_user_info 是成员方法，而其他四个是静态方法？
+### 为什么 load_user_info 是成员方法，而其他四个是静态方法？
 
 因为 load_user_info 需要往一个队列里塞数据，需依附于一个具体的对象。后者于具体的示例无关，仅与传递的参数Session有关。
 
-# TODO
+## TODO
 
 - [ ] 提供更多的加载用户数据的工具
 - [ ] 累积更多的校验函数

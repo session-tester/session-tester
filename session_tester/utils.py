@@ -15,7 +15,7 @@ def default_session_checker_prefix():
     return _session_checker_prefix
 
 
-def _dist_dict_to_list(dist: dict, format_ratio=True):
+def _dist_dict_to_list(dist: dict):
     kv_list = list(dist.items())
     kv_list = sorted(kv_list, key=lambda x: x[1], reverse=True)
     output = []
@@ -25,15 +25,23 @@ def _dist_dict_to_list(dist: dict, format_ratio=True):
 
     for k, v in kv_list:
         ratio = v / total
-        if format_ratio:
-            output.append({"group": k, "count": v, "ratio": f"{ratio * 100:.2f}%"})
-        else:
-            output.append({"group": k, "count": v, "ratio": ratio})
-    output = sorted(output, key=lambda x: (-x["count"], x["group"]))
+        output.append((k, v, ratio))
+
+    output = sorted(output, key=lambda x: (-x[1], x[2]))
     return output
 
 
-def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+def _dist_list_to_format_dict(dist_list: List, format_ratio=True):
+    ret = []
+    for k, v, ratio in dist_list:
+        if format_ratio:
+            ret.append({"group": k, "count": v, "ratio": f"{ratio * 100:.2f}%"})
+        else:
+            ret.append({"group": k, "count": v, "ratio": ratio})
+    return ret
+
+
+def transaction_elem_dist_stat_(session_list: List[Session], custom_flag_func: Callable):
     """HTTP transaction级别元素分布统计
     """
     dist = {}
@@ -46,10 +54,17 @@ def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Ca
                     dist[f] = dist.get(f, 0) + 1
             else:
                 dist[flag] = dist.get(flag, 0) + 1
-    return _dist_dict_to_list(dist, format_ratio)
+    return _dist_dict_to_list(dist)
 
 
-def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+def transaction_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+    """HTTP transaction级别元素分布统计
+    """
+    dist_list = transaction_elem_dist_stat_(session_list, custom_flag_func)
+    return _dist_list_to_format_dict(dist_list, format_ratio)
+
+
+def session_elem_dist_stat_(session_list: List[Session], custom_flag_func: Callable):
     """session级别元素分布统计
     """
     dist = {}
@@ -60,7 +75,15 @@ def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callab
                 dist[f] = dist.get(f, 0) + 1
         else:
             dist[flag] = dist.get(flag, 0) + 1
-    return _dist_dict_to_list(dist, format_ratio)
+
+    return _dist_dict_to_list(dist)
+
+
+def session_elem_dist_stat(session_list: List[Session], custom_flag_func: Callable, format_ratio=True):
+    """session级别元素分布统计
+    """
+    dist_list = session_elem_dist_stat_(session_list, custom_flag_func)
+    return _dist_list_to_format_dict(dist_list, format_ratio)
 
 
 def stat_http_transaction_cost(session_list: List[Session]):
@@ -84,10 +107,10 @@ def stat_http_transaction_cost(session_list: List[Session]):
     p99_time = np.percentile(request_times, 99)
 
     report = [
-        {"耗时类型": "平均值", "耗时": f"{int(mean_time * 100)}ms"},
-        {"耗时类型": "P50", "耗时": f"{int(mean_time * 100)}ms"},
-        {"耗时类型": "P90", "耗时": f"{int(p90_time * 100)}ms"},
-        {"耗时类型": "P99", "耗时": f"{int(p99_time * 100)}ms"},
+        {"耗时类型": "平均值", "耗时": f"{int(mean_time * 1000)}ms"},
+        {"耗时类型": "P50", "耗时": f"{int(mean_time * 1000)}ms"},
+        {"耗时类型": "P90", "耗时": f"{int(p90_time * 1000)}ms"},
+        {"耗时类型": "P99", "耗时": f"{int(p99_time * 1000)}ms"},
     ]
 
     return (mean_time, median_time, p90_time, p99_time), report
