@@ -355,10 +355,20 @@ t.run(
 
 ![ts_with_http_cost_stat.png](https://raw.githubusercontent.com/session-tester/session-tester/main/docs/ts_with_http_cost_stat.png)
 
-### 概率分布辅助函数
+### 其他通用函数
+
+1. 概率分布辅助函数
 
 - `session_elem_dist_stat` 统计 Session 级别的元素分布，只需要传入从session提取元素的函数
 - `transaction_elem_dist_stat` 统计 HttpTransaction 级别的元素分布，只需要传入从 HttpTransaction 提取元素的函数
+
+
+2. 加载用户数据，字段应当与 UserInfo 一致，不一致的字段，将会被放到 `extra` 中。
+
+- ``load_user_info_from_json`` 从 JSON 文件加载用户信息
+- ``load_user_info_from_csv`` 从 CSV 文件加载用户信息，可以指定表头或者使用csv默认表头，
+
+做了一些简单兼容，比如将 `platid`、`plat_id` 替换为 `plat`，`areaid` 替换为 `area`，`open_id` 替换为 `userid` 等。
 
 TODO: 支持多级标签分布
 

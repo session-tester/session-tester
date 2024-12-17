@@ -17,7 +17,10 @@ class UserInfo:
 
     def parse(self, info_dict):
         for key, value in info_dict.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                self.extra[key] = value
 
 
 class UserInfoGenerator:

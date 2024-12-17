@@ -4,9 +4,11 @@ import sys
 from typing import List, Callable
 
 import numpy as np
+import pandas as pd
 
 from .session import Session, HttpTransaction
 from .testcase import SingleSessionCase, SingleRequestCase, AllSessionCase, TestCase
+from .user_info import UserInfo
 
 _session_checker_prefix = "chk"
 
@@ -156,3 +158,31 @@ def auto_gen_cases_from_chk_func(checker_prefix=_session_checker_prefix, module_
             check_cases.append(case)
 
     return check_cases
+
+
+def _replace_map_key(o: dict, k1, k2):
+    if k1 not in o or k2 in o:
+        return
+    o[k2] = o[k1]
+    del o[k1]
+
+
+def load_user_info_from_json(content) -> List[UserInfo]:
+    user_info_list = []
+    for user_info_json in content:
+        user_info = UserInfo()
+        for k1, k2 in [("platid", "plat"), ("areaid", "area"), ("open_id", "userid"), ("openid", "userid"),
+                       ("roleid", "role_id"), ("user_id", "userid"), ("plat_id", "plat")]:
+            _replace_map_key(user_info_json, k1, k2)
+        user_info.parse(user_info_json)
+        user_info_list.append(user_info)
+    return user_info_list
+
+
+def load_user_info_from_csv(file_path, headers=None, skip_header=False) -> List[UserInfo]:
+    if headers:
+        df = pd.read_csv(file_path, names=headers, header=0 if skip_header else None)
+    else:
+        df = pd.read_csv(file_path)
+    k = df.to_dict(orient='records')
+    return load_user_info_from_json(k)
