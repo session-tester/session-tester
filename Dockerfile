@@ -13,7 +13,7 @@ RUN apt-get update && \
 RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.13 1 && \
     wget https://bootstrap.pypa.io/get-pip.py && python3.13 get-pip.py && \
     pip3 install --upgrade pip && \
-    pip3 install session-tester==0.1.0.dev17 redis elasticsearch
+    pip3 install session-tester==0.1.0.dev19 redis elasticsearch
 
 
 WORKDIR /data

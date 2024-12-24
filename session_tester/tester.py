@@ -61,11 +61,16 @@ class Tester:
                 logger.info(f"{test_suite.name}校验完成")
 
             # 保存为Excel文件
-            output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
-            with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(self.report_file(), engine='xlsxwriter') as writer:
                 self.gen_summary(writer)
                 self.gen_detail_report(writer)
+                logger.info(f"汇总报告-内容生成完成")
+
             self.format()
+            logger.info(f"汇总报告-已成功保存到 {self.report_file()}")
+
+    def report_file(self):
+        return os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
 
     def gen_summary(self, writer):
         # 解析数据
@@ -88,14 +93,9 @@ class Tester:
                     "异常说明": report.bad_case
                 })
 
-            # 保存为Excel文件
-            output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
-
             # 汇总信息
             df = pd.DataFrame(parsed_data)
             df.to_excel(writer, sheet_name="测试汇总", index=False)
-
-        logger.info(f"汇总报告-已成功保存到 {output_file}")
 
     def gen_detail_report(self, writer):
 
@@ -129,8 +129,8 @@ class Tester:
                 logger.info(f"详细数据-已成功保存到 表-{sheet_name}")
 
     def format(self):
-        output_file = os.path.join(test_report_dir, f"测试报告-{self.name}.xlsx")
         # 加载生成的Excel文件
+        output_file = self.report_file()
         wb = load_workbook(output_file)
         ws = wb.active
 

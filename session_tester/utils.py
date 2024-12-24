@@ -179,10 +179,10 @@ def load_user_info_from_json(content) -> List[UserInfo]:
     return user_info_list
 
 
-def load_user_info_from_csv(file_path, headers=None, skip_header=False) -> List[UserInfo]:
+def load_user_info_from_csv(file_path, headers=None, skip_header=False, sep=',') -> List[UserInfo]:
     if headers:
-        df = pd.read_csv(file_path, names=headers, header=0 if skip_header else None)
+        df = pd.read_csv(file_path, sep=sep, names=headers, header=0 if skip_header else None)
     else:
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, sep=sep)
     k = df.to_dict(orient='records')
     return load_user_info_from_json(k)
